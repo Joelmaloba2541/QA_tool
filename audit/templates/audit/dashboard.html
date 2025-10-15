@@ -1,0 +1,173 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>QA Tool Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2rem; background: #f5f6fa; }
+        h1 { margin-bottom: 1rem; }
+        form { background: #fff; padding: 1.5rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 2rem; }
+        label { display: block; font-weight: bold; margin-bottom: 0.25rem; }
+        input, select, button, textarea { width: 100%; padding: 0.6rem; margin-bottom: 0.75rem; border: 1px solid #ccd1d9; border-radius: 4px; }
+        button { background: #2d8cff; border: none; color: #fff; font-weight: bold; cursor: pointer; }
+        button:hover { background: #1c6fd5; }
+        .messages { margin-bottom: 1rem; }
+        .message { padding: 0.75rem; border-radius: 4px; margin-bottom: 0.5rem; }
+        .message.success { background: #e6f9ed; color: #277448; }
+        .message.warning { background: #fff4e5; color: #8a6100; }
+        .message.error { background: #fdecea; color: #a81913; }
+        .card { background: #fff; padding: 1.5rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 1.5rem; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 0.75rem; border-bottom: 1px solid #e1e4e8; text-align: left; }
+        th { background: #f0f3f6; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; }
+        .tags { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .tag { padding: 0.25rem 0.5rem; border-radius: 999px; font-size: 0.8rem; color: #fff; }
+        .tag.low { background: #6c8cff; }
+        .tag.medium { background: #ffb347; }
+        .tag.high { background: #ff5c5c; }
+        .grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+        .metric { background: #f0f3f6; border-radius: 6px; padding: 1rem; }
+        .metric strong { display: block; margin-bottom: 0.5rem; }
+        .muted { color: #5f6b7a; font-size: 0.9rem; }
+        .summary { display: flex; align-items: baseline; gap: 0.75rem; margin-bottom: 1rem; }
+        .summary .status { font-weight: bold; text-transform: uppercase; }
+        .status.completed { color: #277448; }
+        .status.failed { color: #a81913; }
+    </style>
+</head>
+<body>
+    <h1>QA Audit Dashboard</h1>
+
+    <div class="messages">
+        {% for message in messages %}
+            <div class="message {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        <h2>Run a New Audit</h2>
+        <label for="website_id">Choose saved website</label>
+        <select name="website_id" id="website_id">
+            <option value="">-- Select existing website --</option>
+            {% for site in websites %}
+                <option value="{{ site.id }}">{{ site.name|default:site.url }}</option>
+            {% empty %}
+                <option value="" disabled>No saved websites yet.</option>
+            {% endfor %}
+        </select>
+        <p class="muted">Or provide a new website URL below to add it automatically:</p>
+        <label for="name">Website name</label>
+        <input type="text" id="name" name="name" placeholder="My Website" />
+        <label for="url">Website URL</label>
+        <input type="url" id="url" name="url" placeholder="https://example.com" />
+        <button type="submit">Run Audit</button>
+    </form>
+
+    {% if latest_audit %}
+        <div class="card">
+            <div class="summary">
+                <h2>{{ latest_audit.website.name|default:latest_audit.website.url }}</h2>
+                <span class="status {{ latest_audit.status }}">{{ latest_audit.status }}</span>
+                <span class="muted">{{ latest_audit.created_at|date:"M j, Y H:i" }}</span>
+            </div>
+            <p class="muted">{{ latest_audit.summary }}</p>
+            <div class="grid">
+                <div class="metric">
+                    <strong>Score</strong>
+                    <div>{{ latest_audit.score }}</div>
+                </div>
+                <div class="metric">
+                    <strong>Response Time</strong>
+                    <div>{{ latest_audit.response_time_ms }} ms</div>
+                </div>
+                <div class="metric">
+                    <strong>Content Length</strong>
+                    <div>{{ latest_audit.content_length }} bytes</div>
+                </div>
+                <div class="metric">
+                    <strong>HTTP Status</strong>
+                    <div>{{ latest_audit.metadata.status }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Findings</h3>
+            {% if findings %}
+                <div class="tags">
+                    {% for finding in findings %}
+                        <div class="tag {{ finding.severity }}">{{ finding.category }} – {{ finding.severity|title }}</div>
+                    {% endfor %}
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Description</th>
+                            <th>Recommendation</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for finding in findings %}
+                            <tr>
+                                <td>{{ finding.title }}</td>
+                                <td>{{ finding.description }}</td>
+                                <td>{{ finding.recommendation }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="muted">No findings recorded for this audit.</p>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <h3>Metrics</h3>
+            {% if metrics %}
+                <div class="grid">
+                    {% for metric in metrics %}
+                        <div class="metric">
+                            <strong>{{ metric.label }}</strong>
+                            <div>{{ metric.value }}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="muted">No metrics recorded.</p>
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <div class="card">
+        <h3>Recent Audits</h3>
+        {% if recent_audits %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Website</th>
+                        <th>Status</th>
+                        <th>Summary</th>
+                        <th>Created</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for audit in recent_audits %}
+                        <tr>
+                            <td>{{ audit.website.name|default:audit.website.url }}</td>
+                            <td>{{ audit.status }}</td>
+                            <td>{{ audit.summary }}</td>
+                            <td>{{ audit.created_at|date:"M j, Y H:i" }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="muted">No audits have been run yet.</p>
+        {% endif %}
+    </div>
+</body>
+</html>
