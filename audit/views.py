@@ -10,6 +10,7 @@ def audit_dashboard(request):
     latest_audit = None
     findings = []
     metrics = []
+    current_user = request.user if request.user.is_authenticated else None
 
     if request.method == "POST":
         website_id = (request.POST.get("website_id") or "").strip()
@@ -32,7 +33,7 @@ def audit_dashboard(request):
         if website is None and not url:
             messages.error(request, "Please choose a website or provide a new URL to audit.")
         elif website is not None:
-            audit = run_audit(website)
+            audit = run_audit(website, user=current_user)
             latest_audit = audit
             findings = list(audit.findings.all())
             metrics = list(audit.metrics.all())
@@ -42,22 +43,26 @@ def audit_dashboard(request):
             else:
                 messages.warning(request, "The audit encountered an issue. Check the summary below for details.")
 
+    audit_queryset = AuditRun.objects.select_related("website").prefetch_related("findings", "metrics").order_by("-created_at")
+
     if latest_audit is None:
-        latest_audit = (
-            AuditRun.objects.select_related("website")
-            .prefetch_related("findings", "metrics")
-            .order_by("-created_at")
-            .first()
-        )
+        user_latest = audit_queryset.filter(created_by=current_user).first() if current_user else None
+        latest_audit = user_latest or audit_queryset.first()
         if latest_audit:
             findings = list(latest_audit.findings.all())
             metrics = list(latest_audit.metrics.all())
 
-    recent_audits = (
-        AuditRun.objects.select_related("website").order_by("-created_at").only(
+    user_recent_audits = (
+        audit_queryset.filter(created_by=current_user).only(
             "id", "status", "summary", "created_at", "website__name"
         )[:5]
+        if current_user
+        else []
     )
+
+    recent_audits = audit_queryset.only(
+        "id", "status", "summary", "created_at", "website__name"
+    )[:5]
     websites = Website.objects.order_by("name", "url").all()
 
     return render(
@@ -68,6 +73,7 @@ def audit_dashboard(request):
             "findings": findings,
             "metrics": metrics,
             "recent_audits": recent_audits,
+            "user_recent_audits": user_recent_audits,
             "websites": websites,
         },
     )

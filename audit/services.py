@@ -228,9 +228,9 @@ def _calculate_score(page: ParsedPage, findings: List[Dict[str, str]]) -> int:
     return max(0, base)
 
 
-def run_audit(website: Website, url: Optional[str] = None) -> AuditRun:
+def run_audit(website: Website, url: Optional[str] = None, user=None) -> AuditRun:
     target_url = url or website.url
-    audit = AuditRun.objects.create(website=website, url=target_url)
+    audit = AuditRun.objects.create(website=website, url=target_url, created_by=user)
 
     try:
         status, body, response_time = _safe_request(target_url)
@@ -286,11 +286,11 @@ def run_audit(website: Website, url: Optional[str] = None) -> AuditRun:
     return audit
 
 
-def run_multi_page_audit(website: Website, urls: Iterable[str]) -> List[AuditRun]:
+def run_multi_page_audit(website: Website, urls: Iterable[str], user=None) -> List[AuditRun]:
     audits = []
     for page_url in urls:
         try:
-            audits.append(run_audit(website, page_url))
+            audits.append(run_audit(website, page_url, user))
         except Exception:
             continue
     return audits

@@ -142,6 +142,32 @@
         </div>
     {% endif %}
 
+    {% if user_recent_audits %}
+        <div class="card">
+            <h3>Your Recent Audits</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Website</th>
+                        <th>Status</th>
+                        <th>Summary</th>
+                        <th>Created</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for audit in user_recent_audits %}
+                        <tr>
+                            <td>{{ audit.website.name|default:audit.website.url }}</td>
+                            <td>{{ audit.status }}</td>
+                            <td>{{ audit.summary }}</td>
+                            <td>{{ audit.created_at|date:"M j, Y H:i" }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+
     <div class="card">
         <h3>Recent Audits</h3>
         {% if recent_audits %}

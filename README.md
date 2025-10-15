@@ -30,7 +30,7 @@ qa_tool/
 - **[Migrate]** `python manage.py migrate`
 - **[Run dev server]** `python manage.py runserver`
 - **[Visit]** Open `http://localhost:8000/` and either select a saved website or drop a fresh URL.
-
+- **[Admin login]** After the server starts, visit `http://localhost:8000/admin/` and sign in with username `admin`, email `admin@gmail.com`, and password `admin` (created automatically on startup).
 The dashboard will run `run_audit()` under the hood, surface the latest findings, and list your recent audit history.
 
 ## 🧪 Testing
@@ -54,6 +54,6 @@ The dashboard will run `run_audit()` under the hood, surface the latest findings
 - When a page is stubborn (timeouts, SSL issues), the dashboard will still show the failure details alongside the audit entry.
 - Keep an eye on `audit/services.py`—that's where new heuristics or integrations belong.
 
----
+The dashboard now differentiates audits per authenticated user and surfaces the five most recent runs for each user alongside the global history.
 
 Happy auditing! 🎯
