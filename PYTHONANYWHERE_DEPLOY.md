@@ -19,7 +19,7 @@ cd ~
 git clone https://github.com/Joelmaloba2541/QA_tool.git
 cd QA_tool
 ```
-If you already have the repo cloned, pull the latest changes instead.
+If you already have the repo cloned, pull the latest changes instead. The same source repo will be used for Render deployment.
 
 ## 3. Configure the Django app
 1. Edit `qa_tool/settings.py` if you need to adjust `ALLOWED_HOSTS` (PythonAnywhere automatically serves from `<username>.pythonanywhere.com`, which is already covered by the wildcard entry).
