@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -5,6 +6,7 @@
     <title>{% block title %}QA Tool – Access{% endblock %}</title>
     <meta name="description" content="Sign in to QA Insights to manage audits, subscriptions, and download professional QA reports.">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/svg+xml" href="{% static 'audit/favicon.svg' %}">
     <style>
         :root { color-scheme: light; }
         body { margin: 0; font-family: "Inter", "Segoe UI", system-ui, sans-serif; background: #f5f7fb; color: #0f172a; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
