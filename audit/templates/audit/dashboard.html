@@ -9,15 +9,17 @@
         :root { color-scheme: light; }
         body { font-family: "Inter", "Segoe UI", Arial, sans-serif; margin: 0; background: linear-gradient(135deg, #f5f8ff 0%, #fff 60%); color: #0f172a; }
         .shell { max-width: 1100px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
-        header { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem; }
+        header { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem; position: relative; overflow: hidden; }
+        header::before { content: ""; position: absolute; inset: -120% -50% 40%; background: conic-gradient(from 45deg, rgba(37,99,235,0.22), rgba(139,92,246,0.18), rgba(45,212,191,0.16), rgba(37,99,235,0.22)); animation: gradientSweep 18s linear infinite; filter: blur(60px); opacity: 0.9; }
+        header > * { position: relative; z-index: 1; }
         header h1 { font-size: 2.5rem; margin: 0; letter-spacing: -0.03em; }
         header p { margin: 0; color: #475569; font-size: 1rem; }
         .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
-        .button { display: inline-flex; align-items: center; justify-content: center; padding: 0.7rem 1.4rem; border-radius: 999px; background: #2d8cff; color: #fff; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease; }
-        .button:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(45, 140, 255, 0.22); }
+        .button { display: inline-flex; align-items: center; justify-content: center; padding: 0.7rem 1.4rem; border-radius: 999px; background: linear-gradient(135deg, #2d8cff 0%, #7c3aed 90%); color: #fff; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease; animation: floatWave 9s ease-in-out infinite; }
+        .button:hover { transform: translateY(-4px) scale(1.02); box-shadow: 0 16px 32px rgba(45, 140, 255, 0.28); }
         .button.secondary { background: #0f172a; }
         .messages { margin-bottom: 1.5rem; }
-        .message { padding: 0.9rem 1.2rem; border-radius: 12px; margin-bottom: 0.75rem; font-weight: 500; animation: fadeUp 0.4s ease both; }
+        .message { padding: 0.9rem 1.2rem; border-radius: 12px; margin-bottom: 0.75rem; font-weight: 500; animation: fadeUp 0.4s ease both, glowPulse 7s ease-in-out infinite alternate; }
         .message.success { background: rgba(34, 197, 94, 0.12); color: #15803d; }
         .message.warning { background: rgba(251, 191, 36, 0.16); color: #92400e; }
         .message.error { background: rgba(248, 113, 113, 0.16); color: #b91c1c; }
@@ -32,7 +34,7 @@
         .layout { display: grid; gap: 1.5rem; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); align-items: start; }
         .stack { display: grid; gap: 1.5rem; }
         .card { background: #fff; border-radius: 18px; padding: 1.75rem; box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06); position: relative; overflow: hidden; animation: fadeUp 0.6s ease both; }
-        .card::after { content: ""; position: absolute; inset: 65% -35% -35% 60%; background: radial-gradient(circle, rgba(45,140,255,0.08) 0%, transparent 65%); }
+        .card::after { content: ""; position: absolute; inset: 65% -35% -35% 60%; background: radial-gradient(circle, rgba(45,140,255,0.08) 0%, transparent 65%); animation: ripplePulse 12s ease-in-out infinite; }
         .card h2, .card h3 { margin-top: 0; margin-bottom: 1rem; font-size: 1.25rem; position: relative; z-index: 1; }
         .summary { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-bottom: 1.25rem; position: relative; z-index: 1; }
         .summary h2 { margin: 0; font-size: 1.5rem; }
@@ -54,22 +56,29 @@
         .tag.low { background: #6366f1; }
         .tag.medium { background: #f97316; }
         .tag.high { background: #ef4444; }
-        .subscription-card { display: grid; gap: 1rem; background: linear-gradient(130deg, rgba(45,140,255,0.12), rgba(56,189,248,0.18)); border-radius: 18px; padding: 1.4rem; color: #0f172a; animation: fadeUp 0.6s ease both; }
+        .subscription-card { display: grid; gap: 1rem; background: linear-gradient(130deg, rgba(45,140,255,0.12), rgba(56,189,248,0.18)); border-radius: 18px; padding: 1.4rem; color: #0f172a; animation: fadeUp 0.6s ease both, glowPulse 8s ease-in-out infinite alternate; position: relative; overflow: hidden; }
+        .subscription-card::before { content: ""; position: absolute; inset: -30% 10% 70% -20%; background: radial-gradient(circle, rgba(255,255,255,0.5), transparent 70%); opacity: 0.5; animation: shimmer 14s linear infinite; }
         .subscription-card .title { font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; }
         .subscription-meta { display: flex; flex-wrap: wrap; gap: 1rem; font-size: 0.9rem; color: #0f172a; }
         .quota { display: grid; gap: 0.5rem; }
         .progress-bar { height: 8px; border-radius: 999px; background: rgba(15, 23, 42, 0.15); overflow: hidden; }
         .progress-bar span { display: block; height: 100%; background: linear-gradient(90deg, #2d8cff, #8b5cf6); transition: width 0.6s ease; }
         .plan-grid { display: grid; gap: 1.2rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); position: relative; z-index: 1; }
-        .plan { background: #fff; border-radius: 16px; padding: 1.4rem; box-shadow: 0 16px 32px rgba(15, 23, 42, 0.07); display: grid; gap: 0.75rem; }
+        .plan { background: #fff; border-radius: 16px; padding: 1.4rem; box-shadow: 0 16px 32px rgba(15, 23, 42, 0.07); display: grid; gap: 0.75rem; position: relative; overflow: hidden; }
+        .plan::before { content: ""; position: absolute; inset: -40% -20% 60% 20%; background: linear-gradient(120deg, rgba(124,58,237,0.16), rgba(56,189,248,0.12)); animation: shimmer 12s linear infinite; opacity: 0.8; }
         .plan h4 { margin: 0; font-size: 1.1rem; }
         .plan .price { font-size: 1.8rem; font-weight: 700; }
         .plan ul { margin: 0; padding-left: 1rem; color: #475569; display: grid; gap: 0.4rem; }
         .plan form { margin: 0; padding: 0; box-shadow: none; background: none; display: contents; }
-        .plan button { width: 100%; }
+        .plan button { width: 100%; animation: floatWave 11s ease-in-out infinite; }
         .empty { color: #94a3b8; font-style: italic; }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes pulse { 0%, 100% { box-shadow: 0 18px 40px rgba(45, 140, 255, 0.08); } 50% { box-shadow: 0 22px 55px rgba(45, 140, 255, 0.18); } }
+        @keyframes floatWave { 0%, 100% { transform: translateY(0) scale(1); } 25% { transform: translateY(-4px) scale(1.01); } 50% { transform: translateY(1px) scale(0.99); } 75% { transform: translateY(-2px) scale(1.02); } }
+        @keyframes gradientSweep { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes glowPulse { 0% { box-shadow: 0 0 0 rgba(56,189,248,0); } 50% { box-shadow: 0 0 22px rgba(59,130,246,0.35); } 100% { box-shadow: 0 0 0 rgba(56,189,248,0); } }
+        @keyframes shimmer { 0% { transform: translateX(-30%) translateY(-10%); } 50% { transform: translateX(15%) translateY(10%); } 100% { transform: translateX(45%) translateY(-5%); } }
+        @keyframes ripplePulse { 0% { transform: scale(0.95); opacity: 0.55; } 50% { transform: scale(1.05); opacity: 0.35; } 100% { transform: scale(0.95); opacity: 0.55; } }
         @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } header h1 { font-size: 2rem; } }
     </style>
 </head>

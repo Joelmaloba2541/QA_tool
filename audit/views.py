@@ -1,12 +1,23 @@
 import uuid
 
 from django.contrib import messages
+from django.contrib.auth import login as auth_login
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.views import LoginView
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse_lazy
 
 from audit.models import AuditRun, Payment, SubscriptionPlan, UserSubscription, Website
 from audit.services import generate_audit_pdf, run_audit
+
+class AuditLoginView(LoginView):
+    template_name = "registration/login.html"
+    redirect_authenticated_user = True
+
+    def get_success_url(self):
+        return self.get_redirect_url() or reverse_lazy("audit-dashboard")
 
 
 def _resolve_subscription(user):
@@ -33,7 +44,7 @@ def audit_dashboard(request):
     if request.method == "POST":
         if not current_user:
             messages.error(request, "Sign in to run audits and manage your subscription.")
-            return redirect("admin:login")
+            return redirect("login")
         subscription = _resolve_subscription(current_user)
         if not subscription:
             messages.error(request, "Subscription could not be initialized. Try again later.")
@@ -125,6 +136,21 @@ def pricing(request):
             "subscription": subscription,
         },
     )
+
+
+def signup(request):
+    if request.user.is_authenticated:
+        return redirect("audit-dashboard")
+
+    form = UserCreationForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        user = form.save()
+        auth_login(request, user)
+        UserSubscription.ensure_trial(user)
+        messages.success(request, "Welcome aboard! Your free trial is ready.")
+        return redirect("audit-dashboard")
+
+    return render(request, "registration/signup.html", {"form": form})
 
 
 @login_required

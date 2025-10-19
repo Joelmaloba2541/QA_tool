@@ -1,0 +1,20 @@
+{% extends "registration/shared_base.html" %}
+{% block auth_title %}Welcome back{% endblock %}
+{% block auth_content %}
+<form method="post" class="auth-form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <div class="field">
+        <label for="id_username">Email or username</label>
+        {{ form.username }}
+        {{ form.username.errors }}
+    </div>
+    <div class="field">
+        <label for="id_password">Password</label>
+        {{ form.password }}
+        {{ form.password.errors }}
+    </div>
+    <button type="submit">Sign in</button>
+    <p class="muted">Don't have an account? <a href="{% url 'signup' %}">Start your free trial</a>.</p>
+</form>
+{% endblock %}
