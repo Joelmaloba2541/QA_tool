@@ -24,7 +24,7 @@ from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.platypus import Image, KeepTogether, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.platypus import KeepTogether, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from .models import AuditFinding, AuditMetric, AuditRun, Website
 
@@ -113,12 +113,6 @@ TLD_COORDS = {
     "es": (40.4168, -3.7038),
     "it": (41.9028, 12.4964),
 }
-
-
-_PDF_BANNER_BYTES = (
-    b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x02\x80\x00\x00\x00P\x08\x06\x00\x00\x00\x1d\xad&\xd8"
-    b"\x00\x00\x00\x19tEXtSoftware\x00Adobe ImageReadyq\xc9e<\x00\x00\x01\xfdIDATx\xda\xed\xddA\n\xc20\x10\x05`\xd7r\xff\x7f\x89Uq\xd5\x04\x04\x8b\x15\xa2c\x00\x02\xb4\xd7\x001\x11M\xf7\x81\xd5\xf9HU\xff\x07@\xdf\x1d\xef\x9e\xec\xe6\x02\x00\x00\x00\x00IEND\xaeB`\x82"
-)
 
 
 def _recent_scores(audit: AuditRun) -> List[float]:
@@ -584,12 +578,6 @@ def generate_audit_pdf(audit: AuditRun) -> bytes:
         canvas.restoreState()
 
     story = []
-
-    banner = Image(BytesIO(_PDF_BANNER_BYTES)) if '_PDF_BANNER_BYTES' in globals() else None
-    if banner:
-        banner._restrictSize(doc.width, 1.4 * inch)
-        story.append(banner)
-        story.append(Spacer(1, 12))
 
     brand_table = Table(
         [
