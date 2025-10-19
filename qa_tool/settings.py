@@ -134,6 +134,8 @@ USE_X_FORWARDED_HOST = True
 CSRF_TRUSTED_ORIGINS = [
     "https://*.pythonanywhere.com",
     "https://*.onrender.com",
+    "https://qa-tool-wg8f.onrender.com",
+    "https://qa-tool-wg8f.onrenderapp.com",
 ]
 
 # Default primary key field type
