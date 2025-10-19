@@ -1,0 +1,178 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Checkout · {{ plan.name }} · QA Insights</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/svg+xml" href="{% static 'audit/favicon.svg' %}">
+    <style>
+        :root { color-scheme: light; }
+        body { margin: 0; font-family: "Inter", "Segoe UI", Arial, sans-serif; background: #f1f5ff; color: #0f172a; }
+        .topbar { background: #fff; border-bottom: 1px solid rgba(15, 23, 42, 0.08); position: sticky; top: 0; z-index: 10; }
+        .topbar .bar { max-width: 1100px; margin: 0 auto; padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+        .brand { font-weight: 700; color: #0f172a; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; }
+        .brand span { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; border-radius: 0.75rem; background: linear-gradient(135deg, #2563eb, #60a5fa); color: #fff; }
+        main { max-width: 1100px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+        .back-link { color: #2563eb; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem; }
+        .checkout-header { display: grid; gap: 0.6rem; margin-bottom: 2rem; }
+        .checkout-header h1 { margin: 0; font-size: clamp(1.9rem, 4vw, 2.8rem); letter-spacing: -0.02em; }
+        .checkout-header .lead { margin: 0; color: #475569; }
+        .checkout-grid { display: grid; gap: 1.5rem; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.9fr); align-items: start; }
+        .plan-card { background: #0f172a; color: #f8fafc; border-radius: 20px; padding: 2rem; display: grid; gap: 1rem; position: sticky; top: 2rem; box-shadow: 0 24px 60px rgba(15, 23, 42, 0.55); }
+        .plan-card h2 { margin: 0; font-size: 1.4rem; letter-spacing: -0.01em; }
+        .plan-card .price { font-size: 2.5rem; font-weight: 700; }
+        .plan-card .interval { margin: 0; color: rgba(248, 250, 252, 0.7); }
+        .feature-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.55rem; }
+        .feature-list li { display: flex; gap: 0.55rem; align-items: center; }
+        .feature-list li::before { content: "✔"; color: #22c55e; font-weight: 700; }
+        .current-plan { background: rgba(255, 255, 255, 0.12); padding: 0.9rem 1rem; border-radius: 12px; }
+        .gateway-link { color: #60a5fa; font-weight: 600; text-decoration: none; }
+        .payment-options { display: grid; gap: 1.5rem; }
+        .option { background: #fff; border-radius: 20px; padding: 1.85rem; box-shadow: 0 24px 50px rgba(15, 23, 42, 0.12); display: grid; gap: 1rem; }
+        .option h3 { margin: 0; font-size: 1.2rem; }
+        .muted { color: #64748b; }
+        .panel { display: grid; gap: 0.8rem; }
+        .panel label { font-weight: 600; }
+        .panel input { border: 1px solid #d7e2f6; border-radius: 12px; padding: 0.8rem 0.9rem; font-size: 1rem; transition: border 0.2s ease, box-shadow 0.2s ease; }
+        .panel input:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18); }
+        .button, .button.primary { padding: 0.95rem 1.55rem; border-radius: 14px; border: none; font-weight: 700; letter-spacing: 0.02em; cursor: pointer; transition: transform 0.12s ease, box-shadow 0.24s ease; text-decoration: none; }
+        .button.primary { background: linear-gradient(135deg, #1d4ed8, #60a5fa); color: #ffffff; text-shadow: 0 1px 3px rgba(15, 23, 42, 0.45); box-shadow: 0 18px 40px rgba(37, 99, 235, 0.35); border: 1px solid rgba(255,255,255,0.55); }
+        .button { background: linear-gradient(135deg, #0f172a, #111827); color: #ffffff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55); box-shadow: 0 16px 38px rgba(15, 23, 42, 0.32); border: 1px solid rgba(255,255,255,0.25); }
+        .button:hover { transform: translateY(-1px); box-shadow: 0 10px 25px rgba(37, 99, 235, 0.24); }
+        .card-inputs { display: grid; gap: 0.8rem; }
+        .row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
+        .secure-note { font-size: 0.92rem; color: #64748b; display: flex; align-items: center; gap: 0.4rem; }
+        footer { margin-top: 4rem; padding: 2rem 1.5rem; text-align: center; color: #94a3b8; font-size: 0.92rem; }
+        @media (max-width: 960px) {
+            .checkout-grid { grid-template-columns: 1fr; }
+            .plan-card { position: static; }
+            .topbar .bar { flex-wrap: wrap; }
+        }
+        @media (max-width: 640px) {
+            main { padding: 2rem 1.1rem 3.5rem; }
+            .payment-options { gap: 1.1rem; }
+            .option { padding: 1.35rem; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="topbar">
+        <div class="bar">
+            <a href="{% url 'audit-dashboard' %}" class="brand"><span>Q</span>QA Insights</a>
+            <a href="{% url 'pricing' %}" class="back-link">Back to pricing</a>
+        </div>
+    </nav>
+    <main>
+        <section class="checkout-header">
+            <h1>Complete your subscription</h1>
+            <p class="lead">Secure your access to <strong>{{ plan.name }}</strong>. Choose a payment option that works best for your team.</p>
+        </section>
+        <div class="checkout-grid">
+            <section class="plan-card">
+                <h2>{{ plan.name }}</h2>
+                <div class="price">{{ plan.display_price }}</div>
+                <p class="interval">Billed {{ plan.get_billing_interval_display|lower }}</p>
+                {% if plan.features %}
+                    <ul class="feature-list">
+                        {% for feature in plan.features %}
+                            <li>{{ feature }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+                {% if existing %}
+                    <div class="current-plan">You currently have an active <strong>{{ existing.plan.name }}</strong> subscription.</div>
+                {% endif %}
+                <a href="{{ gateway_url }}" class="gateway-link">Prefer a hosted checkout experience? Continue to gateway →</a>
+            </section>
+            <section class="payment-options">
+                <div class="option">
+                    <h3>1. Manual invoice / bank transfer</h3>
+                    <p class="muted">Provide a payment reference or receipt number from your preferred channel.</p>
+                    <form method="post" class="panel" data-plan="{{ plan.slug }}">
+                        {% csrf_token %}
+                        <input type="hidden" name="provider" value="manual">
+                        <label for="payment_reference">Payment reference</label>
+                        <input id="payment_reference" name="payment_reference" placeholder="e.g. BANK-98213" required>
+                        <div class="muted" id="reference-hint" hidden>Loaded your saved reference. Double-check before submitting.</div>
+                        <button type="submit" class="button primary">Activate with reference</button>
+                    </form>
+                </div>
+
+                <div class="option">
+                    <h3>2. ExpressPay inline card capture</h3>
+                    <p class="muted">Use our sandbox provider to capture a mock card payment instantly.</p>
+                    <form method="post" class="panel" id="expresspay-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="provider" value="inline">
+                        <input type="hidden" name="payment_reference" id="inline-reference">
+                        <input type="hidden" name="payment_token" id="expresspay-token">
+                        <div class="card-inputs">
+                            <label>Card number</label>
+                            <input data-role="card-number" placeholder="4242 4242 4242 4242" maxlength="19">
+                            <div class="row">
+                                <div>
+                                    <label>Expiry</label>
+                                    <input data-role="card-exp" placeholder="12/30" maxlength="5">
+                                </div>
+                                <div>
+                                    <label>CVC</label>
+                                    <input data-role="card-cvc" placeholder="123" maxlength="4">
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="button" id="expresspay-submit">Pay & Activate</button>
+                        <div class="secure-note">🔐 Secured via ExpressPay sandbox · No card is actually charged.</div>
+                    </form>
+                </div>
+            </section>
+        </div>
+    </main>
+    <footer>
+        &copy; {% now "Y" %} QA Insights. All rights reserved.
+    </footer>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const planSlug = "{{ plan.slug }}";
+            const storageKey = `qa_reference_${planSlug}`;
+            const canStore = typeof window !== "undefined" && "localStorage" in window;
+            const savedReference = canStore ? (localStorage.getItem(storageKey) || "") : "";
+            const manualInput = document.getElementById("payment_reference");
+            const manualHint = document.getElementById("reference-hint");
+            const inlineReference = document.getElementById("inline-reference");
+            if (manualInput && savedReference) {
+                manualInput.value = savedReference;
+                manualHint.hidden = false;
+            }
+            if (inlineReference && savedReference) {
+                inlineReference.value = savedReference;
+            }
+            const manualForm = document.querySelector('form[data-plan="{{ plan.slug }}"]');
+            if (manualForm && canStore) {
+                manualForm.addEventListener("submit", () => {
+                    if (manualInput) {
+                        localStorage.setItem(storageKey, manualInput.value.trim());
+                    }
+                });
+            }
+            const form = document.getElementById("expresspay-form");
+            if (!form) return;
+            form.addEventListener("submit", function (event) {
+                const number = form.querySelector('[data-role="card-number"]').value.trim();
+                const exp = form.querySelector('[data-role="card-exp"]').value.trim();
+                const cvc = form.querySelector('[data-role="card-cvc"]').value.trim();
+                if (!number || !exp || !cvc) {
+                    event.preventDefault();
+                    alert("Please fill card details to generate a payment token.");
+                    return;
+                }
+                const token = `expay_${Date.now()}`;
+                document.getElementById("expresspay-token").value = token;
+                if (inlineReference && canStore) {
+                    inlineReference.value = savedReference || `inline-${token}`;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

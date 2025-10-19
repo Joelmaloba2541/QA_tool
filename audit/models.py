@@ -340,3 +340,10 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"{self.user} → {self.plan.name} ({self.status})"
+
+    @property
+    def display_amount(self):
+        amount = self.amount_cents / 100
+        if self.currency.upper() == "USD":
+            return f"${amount:,.2f}"
+        return f"{self.currency} {amount:,.2f}"

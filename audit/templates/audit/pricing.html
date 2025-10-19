@@ -24,7 +24,8 @@
         header h1 { margin: 0; font-size: clamp(2rem, 5vw, 3rem); letter-spacing: -0.03em; }
         header p { margin: 0; color: #475569; font-size: 1rem; }
         .plans { display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
-        .plan { background: #fff; border-radius: 18px; padding: 1.75rem; box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08); display: grid; gap: 1rem; border: 1px solid rgba(59,130,246,0.12); }
+        .plan { background: #fff; border-radius: 18px; padding: 1.75rem; box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08); display: grid; gap: 1rem; border: 1px solid rgba(59,130,246,0.12); position: relative; overflow: hidden; }
+        .badge { position: absolute; top: 1.2rem; right: -3rem; transform: rotate(45deg); background: #1d4ed8; color: #fff; padding: 0.35rem 3.5rem; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; box-shadow: 0 12px 24px rgba(29, 78, 216, 0.25); }
         .plan h2 { margin: 0; font-size: 1.35rem; }
         .price { font-size: 2.25rem; font-weight: 700; color: #0f172a; }
         .period { font-size: 0.95rem; color: #475569; }
@@ -32,9 +33,25 @@
         li { padding-left: 1.4rem; position: relative; }
         li::before { content: ""; width: 0.5rem; height: 0.5rem; border-radius: 999px; background: #22c55e; position: absolute; left: 0; top: 0.55rem; }
         form { margin: 0; }
-        .plan button { width: 100%; padding: 0.75rem 1rem; border-radius: 999px; border: none; background: #0f172a; color: #fff; font-weight: 600; cursor: pointer; transition: background 0.2s ease; }
-        .plan button:hover { background: #1f2937; }
+        .plan button { width: 100%; padding: 0.85rem 1.2rem; border-radius: 999px; border: none; background: linear-gradient(135deg, #1d4ed8, #60a5fa); color: #fff; font-weight: 700; letter-spacing: 0.02em; cursor: pointer; transition: transform 0.15s ease, box-shadow 0.2s ease; }
+        .plan button:hover { transform: translateY(-1px); box-shadow: 0 18px 36px rgba(37, 99, 235, 0.3); }
         .trial-card { background: linear-gradient(135deg, #1d4ed8, #60a5fa); color: #fff; padding: 1.75rem; border-radius: 18px; display: grid; gap: 0.75rem; box-shadow: 0 18px 40px rgba(37, 99, 235, 0.25); }
+        .actions a { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.85rem 1.2rem; border-radius: 999px; font-weight: 700; letter-spacing: 0.02em; text-decoration: none; }
+        .actions a.primary { background: linear-gradient(135deg, #1d4ed8, #60a5fa); color: #fff; box-shadow: 0 18px 40px rgba(37, 99, 235, 0.3); }
+        .actions a.secondary { background: linear-gradient(135deg, #0f172a, #111827); color: #fff; box-shadow: 0 16px 36px rgba(15, 23, 42, 0.28); }
+        .actions button { padding: 0.85rem 1.2rem; border-radius: 999px; border: none; font-weight: 700; letter-spacing: 0.02em; cursor: pointer; background: rgba(15, 23, 42, 0.08); color: #0f172a; }
+        .actions button:hover { background: rgba(15, 23, 42, 0.12); }
+        .modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); display: none; align-items: center; justify-content: center; padding: 1.5rem; z-index: 100; }
+        .modal.active { display: flex; }
+        .modal-content { background: #fff; border-radius: 18px; max-width: 420px; width: 100%; padding: 1.8rem; display: grid; gap: 1rem; box-shadow: 0 24px 50px rgba(15, 23, 42, 0.18); }
+        .modal-content input { width: 100%; padding: 0.75rem; border-radius: 12px; border: 1px solid #d7e2f6; }
+        .modal-actions { display: flex; gap: 0.75rem; justify-content: flex-end; }
+        .modal-actions button { padding: 0.75rem 1.2rem; border-radius: 12px; border: none; font-weight: 600; cursor: pointer; }
+        .modal-actions .close { background: rgba(15, 23, 42, 0.08); color: #0f172a; }
+        .modal-actions .submit { background: linear-gradient(135deg, #1d4ed8, #60a5fa); color: #fff; }
+        .footer-nav { margin-top: 1.5rem; display: flex; justify-content: center; flex-wrap: wrap; gap: 1rem; }
+        .footer-nav a { color: #1d4ed8; font-weight: 600; text-decoration: none; }
+        .footer-nav a:hover { text-decoration: underline; }
         footer { padding: 2rem 1.5rem 3rem; text-align: center; color: #94a3b8; font-size: 0.9rem; }
         @media (max-width: 640px) {
             .topbar .bar { flex-direction: column; align-items: flex-start; gap: 0.6rem; }
@@ -47,6 +64,8 @@
         <div class="bar">
             <a href="{% url 'audit-dashboard' %}" class="brand"><span>Q</span>QA Insights</a>
             <div class="nav-actions">
+                <a href="#plans" class="nav-link">Plans</a>
+                <a href="#trial" class="nav-link">Free trial</a>
                 <a href="{% url 'audit-dashboard' %}" class="nav-link">Dashboard</a>
                 {% if user.is_authenticated %}
                     <a href="{% url 'logout' %}" class="nav-link">Sign out</a>
@@ -64,7 +83,7 @@
         </header>
 
         {% if trial_plan %}
-            <section class="trial-card">
+            <section class="trial-card" id="trial">
                 <h2>Free trial available</h2>
                 <p>Activate one complimentary audit for every new account. No credit card required.</p>
                 <form method="post" action="{% url 'checkout' trial_plan.slug %}">
@@ -74,7 +93,7 @@
             </section>
         {% endif %}
 
-        <section class="plans">
+        <section class="plans" id="plans">
             {% for plan in plans %}
                 <article class="plan">
                     <div>
@@ -89,18 +108,64 @@
                             {% endfor %}
                         </ul>
                     {% endif %}
-                    <form method="post" action="{% url 'checkout' plan.slug %}">
-                        {% csrf_token %}
-                        <button type="submit">Choose {{ plan.name }}</button>
-                    </form>
+                    <div class="actions" style="display:grid; gap:0.6rem;">
+                        <a class="primary" href="{% url 'payment-checkout' plan.slug %}" data-plan="{{ plan.slug }}">Manual or inline checkout</a>
+                        <a class="secondary" href="{% url 'payment-gateway' plan.slug %}">Secure gateway</a>
+                        <button type="button" data-reference="{{ plan.slug }}">Add payment reference</button>
+                    </div>
                 </article>
             {% empty %}
                 <p>No paid plans are currently available. Check back soon.</p>
             {% endfor %}
         </section>
     </main>
+    <div class="modal" id="reference-modal">
+        <div class="modal-content">
+            <h2>Add payment reference</h2>
+            <p class="muted">Paste your invoice ID or bank transfer reference to use during checkout.</p>
+            <input id="reference-input" placeholder="e.g. BANK-98213" />
+            <div class="modal-actions">
+                <button class="close" type="button">Cancel</button>
+                <button class="submit" type="button">Save & continue</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const modal = document.getElementById("reference-modal");
+            const input = document.getElementById("reference-input");
+            let targetPlan = null;
+            document.querySelectorAll("[data-reference]").forEach(button => {
+                button.addEventListener("click", () => {
+                    targetPlan = button.getAttribute("data-reference");
+                    input.value = localStorage.getItem(`qa_reference_${targetPlan}`) || "";
+                    modal.classList.add("active");
+                    input.focus();
+                });
+            });
+            modal.querySelector(".close").addEventListener("click", () => {
+                modal.classList.remove("active");
+            });
+            modal.querySelector(".submit").addEventListener("click", () => {
+                if (!targetPlan) return;
+                const value = input.value.trim();
+                localStorage.setItem(`qa_reference_${targetPlan}`, value);
+                modal.classList.remove("active");
+                alert("Reference saved. It will be prefilled on the checkout page.");
+            });
+            modal.addEventListener("click", (event) => {
+                if (event.target === modal) modal.classList.remove("active");
+            });
+        });
+    </script>
     <footer>
         &copy; {% now "Y" %} QA Insights. All rights reserved.
+        <div class="footer-nav">
+            <a href="#plans">Plans</a>
+            <a href="#trial">Free trial</a>
+            <a href="{% url 'audit-dashboard' %}">Dashboard</a>
+            <a href="mailto:support@qa-insights.io">Support</a>
+        </div>
     </footer>
 </body>
 </html>

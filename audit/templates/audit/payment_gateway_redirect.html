@@ -1,0 +1,42 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Secure Gateway · {{ plan.name }} · QA Insights</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/svg+xml" href="{% static 'audit/favicon.svg' %}">
+    <style>
+        body { margin: 0; font-family: "Inter", "Segoe UI", Arial, sans-serif; background: linear-gradient(160deg, #1d4ed8, #0f172a); color: #f8fafc; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+        .shell { max-width: 520px; width: 100%; background: rgba(15, 23, 42, 0.72); border-radius: 24px; padding: 2.5rem; box-shadow: 0 28px 60px rgba(8, 47, 73, 0.45); display: grid; gap: 1.2rem; text-align: center; backdrop-filter: blur(12px); }
+        h1 { margin: 0; font-size: 2rem; letter-spacing: -0.02em; }
+        p { margin: 0; line-height: 1.5; color: rgba(248, 250, 252, 0.82); }
+        .spinner { width: 3rem; height: 3rem; border-radius: 50%; border: 4px solid rgba(148, 163, 184, 0.35); border-top-color: #60a5fa; margin: 1.4rem auto; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .plan-chip { display: inline-flex; gap: 0.6rem; align-items: center; background: rgba(96, 165, 250, 0.2); padding: 0.6rem 1rem; border-radius: 999px; font-weight: 600; color: #bfdbfe; }
+        .actions { display: grid; gap: 0.6rem; margin-top: 1rem; }
+        .button { display: inline-flex; justify-content: center; align-items: center; padding: 0.75rem 1.2rem; border-radius: 12px; border: none; font-weight: 600; cursor: pointer; text-decoration: none; transition: transform 0.1s ease, box-shadow 0.2s ease; }
+        .button.primary { background: #60a5fa; color: #0f172a; }
+        .button.secondary { background: rgba(255, 255, 255, 0.12); color: #f8fafc; }
+        .button:hover { transform: translateY(-1px); box-shadow: 0 12px 30px rgba(96, 165, 250, 0.35); }
+    </style>
+</head>
+<body>
+    <div class="shell" id="gateway-shell">
+        <span class="plan-chip">Processing {{ plan.name }} checkout</span>
+        <h1>Redirecting to secure payment</h1>
+        <p>We are connecting you to our trusted payments partner. This may take a few seconds. Please keep this window open.</p>
+        <div class="spinner"></div>
+        <p>If you are not redirected automatically, use the buttons below.</p>
+        <div class="actions">
+            <a href="{{ callback_url }}" class="button primary">Continue payment</a>
+            <a href="{{ cancel_url }}" class="button secondary">Cancel and return</a>
+        </div>
+    </div>
+    <script>
+        setTimeout(function () {
+            window.location.href = "{{ callback_url }}";
+        }, 2800);
+    </script>
+</body>
+</html>

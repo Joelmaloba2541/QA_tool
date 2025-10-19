@@ -7,6 +7,9 @@
     <meta name="description" content="Monitor web quality assurance audits, download PDF reports, and manage SaaS subscriptions in one workspace.">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" type="image/svg+xml" href="{% static 'audit/favicon.svg' %}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-sA+e2xN6YtF6Xn2zpOwVG55VnY0os1tLFp+M0ao0m2Q=" crossorigin="" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-VzL5H3pP4SzscgCN1vFeJEewB0g6w0tbGA2n9g3p+DQ=" crossorigin="" defer></script>
     <style>
         :root { color-scheme: light; }
         body { font-family: "Inter", "Segoe UI", Arial, sans-serif; margin: 0; background: #f5f9ff; color: #0f172a; min-height: 100vh; display: flex; flex-direction: column; }
@@ -40,6 +43,16 @@
         select:focus, input:focus, textarea:focus { border-color: #2d8cff; outline: none; box-shadow: 0 0 0 3px rgba(45, 140, 255, 0.2); }
         button[type="submit"] { justify-self: flex-start; position: relative; z-index: 1; }
         .muted { color: #64748b; font-size: 0.95rem; }
+        .analytics-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 2rem; }
+        .analytics-card { background: linear-gradient(150deg, rgba(45,140,255,0.12), rgba(37,99,235,0.06)); border-radius: 16px; padding: 1.2rem; display: grid; gap: 0.5rem; border: 1px solid rgba(59,130,246,0.18); }
+        .analytics-card h3 { margin: 0; font-size: 0.9rem; letter-spacing: 0.08em; text-transform: uppercase; color: #1d4ed8; }
+        .analytics-card strong { font-size: 2rem; line-height: 1; }
+        .analytics-card span { color: #475569; font-size: 0.95rem; }
+        .data-grid { display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); margin-bottom: 2rem; }
+        .data-card { background: #fff; border-radius: 18px; padding: 1.5rem; box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08); display: grid; gap: 1rem; position: relative; min-height: 180px; }
+        .data-card h3 { margin: 0; font-size: 1.1rem; }
+        .chart-wrapper { position: relative; width: 100%; height: 260px; }
+        #audit-map { width: 100%; height: 300px; border-radius: 14px; }
         .layout { display: grid; gap: 1.5rem; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); align-items: start; }
         .stack { display: grid; gap: 1.5rem; }
         .card { background: #fff; border-radius: 18px; padding: 1.75rem; box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08); position: relative; }
@@ -79,6 +92,35 @@
         .plan form { margin: 0; padding: 0; box-shadow: none; background: none; display: contents; }
         .plan button { width: 100%; }
         .empty { color: #94a3b8; font-style: italic; }
+        .velocity-card { display: grid; gap: 0.75rem; }
+        .velocity-meta { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; color: #64748b; flex-wrap: wrap; gap: 0.5rem; }
+        .velocity-chart { position: relative; width: 100%; height: 220px; }
+        .velocity-chart canvas { width: 100% !important; height: 220px !important; }
+        .timeline { display: grid; gap: 1rem; position: relative; padding-left: 0.5rem; }
+        .timeline::before { content: ""; position: absolute; left: 0.4rem; top: 0; bottom: 0; width: 2px; background: rgba(37, 99, 235, 0.2); }
+        .timeline-entry { position: relative; padding-left: 1.8rem; }
+        .timeline-entry::before { content: ""; position: absolute; left: 0.25rem; top: 0.4rem; width: 0.6rem; height: 0.6rem; border-radius: 50%; background: #2563eb; box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.18); }
+        .timeline-entry h4 { margin: 0; font-size: 0.95rem; }
+        .timeline-entry span { display: block; color: #64748b; font-size: 0.85rem; }
+        .revenue-card { display: grid; gap: 0.6rem; }
+        .revenue-value { font-size: 2.4rem; font-weight: 700; }
+        .suggestions { display: grid; gap: 0.75rem; }
+        .suggestion-item { background: linear-gradient(145deg, #fdf7ed, #fff3eb); border-radius: 14px; padding: 1rem 1.2rem; border: 1px solid rgba(251, 191, 36, 0.25); display: flex; gap: 0.75rem; }
+        .suggestion-item strong { color: #ca8a04; }
+        .suggestion-item span { flex: 1 0 auto; }
+        .region-list { display: grid; gap: 0.75rem; }
+        .region-row { display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.04); border-radius: 12px; padding: 0.6rem 0.9rem; }
+        .region-row span { font-weight: 600; }
+        .modal-toggle { background: rgba(37, 99, 235, 0.12); color: #1d4ed8; border-radius: 12px; padding: 0.6rem 0.9rem; border: 1px solid rgba(37, 99, 235, 0.25); cursor: pointer; font-weight: 600; text-align: center; }
+        .modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); display: none; align-items: center; justify-content: center; padding: 2rem; z-index: 100; }
+        .modal.active { display: flex; }
+        .modal-content { background: #fff; border-radius: 16px; max-width: 720px; width: 100%; padding: 2rem; display: grid; gap: 1.2rem; }
+        .modal table { min-width: unset; }
+        .close-modal { justify-self: flex-end; background: rgba(15, 23, 42, 0.08); border: none; padding: 0.4rem 0.8rem; border-radius: 8px; cursor: pointer; }
+        .plan-badge { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.35rem 0.8rem; border-radius: 999px; background: rgba(37, 99, 235, 0.12); color: #1d4ed8; font-size: 0.85rem; }
+        .footer-nav { margin-top: 1.5rem; display: flex; justify-content: center; flex-wrap: wrap; gap: 1rem; }
+        .footer-nav a { color: #1d4ed8; font-weight: 600; text-decoration: none; }
+        .footer-nav a:hover { text-decoration: underline; }
         footer { padding: 2rem 1.5rem 3rem; text-align: center; color: #94a3b8; font-size: 0.9rem; }
         @media (max-width: 900px) {
             .topbar .bar { padding: 0.85rem 1rem; }
@@ -91,6 +133,10 @@
             .nav-actions { width: 100%; justify-content: space-between; }
             .nav-link { padding: 0.4rem 0.65rem; }
             header { text-align: left; }
+            .data-grid { grid-template-columns: 1fr; }
+            .suggestion-item { flex-direction: column; }
+            .timeline-entry { padding-left: 1.3rem; }
+            .timeline-entry::before { left: 0; }
         }
     </style>
 </head>
@@ -99,6 +145,9 @@
         <div class="bar">
             <a href="{% url 'audit-dashboard' %}" class="brand"><span>Q</span>QA Insights</a>
             <div class="nav-actions">
+                <a href="#analytics" class="nav-link">Analytics</a>
+                <a href="#recent" class="nav-link">Audits</a>
+                <a href="#plans" class="nav-link">Plans</a>
                 <a href="{% url 'pricing' %}" class="nav-link">Pricing</a>
                 {% if user.is_authenticated %}
                     <span class="welcome">Signed in as {{ user.get_short_name|default:user.username }}</span>
@@ -118,6 +167,7 @@
             </div>
             <div class="actions">
                 <a href="{% url 'pricing' %}" class="button">Upgrade subscription</a>
+                <span class="modal-toggle" data-modal="plan-modal">Compare plans</span>
                 {% if latest_audit %}
                     {% if user.is_staff or latest_audit.created_by_id == user.id %}
                         <a href="{% url 'audit-download' latest_audit.pk %}" class="button secondary">Download latest PDF</a>
@@ -131,6 +181,31 @@
                 <div class="message {{ message.tags }}">{{ message }}</div>
             {% endfor %}
         </div>
+
+        <section class="analytics-grid" id="analytics">
+            <article class="analytics-card">
+                <h3>Total Audits</h3>
+                <strong>{{ analytics_totals.total }}</strong>
+                <span>{{ analytics_totals.completed }} completed · {{ analytics_totals.failed }} failed</span>
+            </article>
+            <article class="analytics-card">
+                <h3>Completion Rate</h3>
+                <strong>{{ analytics_totals.completion_rate }}%</strong>
+                <span>Average score {{ analytics_totals.avg_score }}</span>
+            </article>
+            <article class="analytics-card">
+                <h3>Response Time</h3>
+                <strong>{{ analytics_totals.avg_response }} ms</strong>
+                <span>Average across all audits</span>
+            </article>
+            {% if subscription and remaining_audits is not None %}
+                <article class="analytics-card">
+                    <h3>Quota Remaining</h3>
+                    <strong>{{ remaining_audits }}</strong>
+                    <span>{{ subscription.plan.name }} plan usage · {{ subscription_usage_percent|default_if_none:0 }}%</span>
+                </article>
+            {% endif %}
+        </section>
 
         {% if subscription %}
             <section class="subscription-card">
@@ -181,10 +256,95 @@
             <button type="submit" class="button">Run audit</button>
         </form>
 
-        <div class="layout">
+        <section class="data-grid">
+            <article class="data-card">
+                <h3>Status distribution</h3>
+                <div class="chart-wrapper">
+                    <canvas id="statusChart"></canvas>
+                </div>
+            </article>
+            <article class="data-card">
+                <h3>Average score trend</h3>
+                <div class="chart-wrapper">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </article>
+            <article class="data-card">
+                <h3>Subscribers per plan</h3>
+                <div class="chart-wrapper">
+                    <canvas id="planChart"></canvas>
+                </div>
+            </article>
+            <article class="data-card">
+                <h3>Global audit footprint</h3>
+                <div id="audit-map"></div>
+            </article>
+            <article class="data-card">
+                <h3>Weekly audit velocity</h3>
+                {% if audit_velocity %}
+                    <div class="velocity-card">
+                        <div class="velocity-meta">
+                            <span>Last {{ audit_velocity|length }} weeks</span>
+                            <span>Total audits: {{ analytics_totals.total }}</span>
+                        </div>
+                        <div class="velocity-chart"><canvas id="velocityChart"></canvas></div>
+                    </div>
+                {% else %}
+                    <p class="empty">Run audits to build momentum.</p>
+                {% endif %}
+            </article>
+            <article class="data-card">
+                <h3>Revenue snapshot</h3>
+                <div class="revenue-card">
+                    <div class="revenue-value">${{ total_revenue|floatformat:2 }}</div>
+                    <p class="muted">Sum of successful payments across all plans.</p>
+                </div>
+            </article>
+            <article class="data-card">
+                <h3>Smart suggestions</h3>
+                <div class="suggestions">
+                    {% for tip in smart_suggestions %}
+                        <div class="suggestion-item">
+                            <strong>Insight</strong>
+                            <span>{{ tip }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            </article>
+            <article class="data-card">
+                <h3>Regional footprint</h3>
+                <div class="region-list">
+                    {% for region in region_summary %}
+                        <div class="region-row">
+                            <span>{{ region.name }}</span>
+                            <span>{{ region.count }} audits</span>
+                        </div>
+                    {% empty %}
+                        <p class="empty">No geo data available.</p>
+                    {% endfor %}
+                </div>
+            </article>
+            <article class="data-card">
+                <h3>Activity timeline</h3>
+                {% if timeline_events %}
+                    <div class="timeline">
+                        {% for event in timeline_events %}
+                            <div class="timeline-entry">
+                                <h4>{{ event.label }}</h4>
+                                <span>{{ event.timestamp|date:"M j, Y H:i" }} · {{ event.type|title }} · {{ event.meta }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="empty">Nothing to report yet.</p>
+                {% endif %}
+            </article>
+        </section>
+
+        <div class="layout" id="recent">
             <div class="stack">
                 {% if latest_audit %}
-                    <section class="card">
+                    <section class="card" id="plans">
                         <div class="summary">
                             <h2>{{ latest_audit.website.name|default:latest_audit.website.url }}</h2>
                             <span class="status {{ latest_audit.status }}">{{ latest_audit.status }}</span>
@@ -359,6 +519,235 @@
     </main>
     <footer>
         &copy; {% now "Y" %} QA Insights. All rights reserved.
+        <div class="footer-nav">
+            <a href="#analytics">Analytics</a>
+            <a href="#recent">Audits</a>
+            <a href="#plans">Plans</a>
+            <a href="{% url 'pricing' %}">Pricing</a>
+            <a href="mailto:support@qa-insights.io">Support</a>
+        </div>
     </footer>
+
+    {{ chart_status_counts|json_script:"status-data" }}
+    {{ chart_score_series|json_script:"trend-data" }}
+    {{ chart_plan_breakdown|json_script:"plan-data" }}
+    {{ region_markers|json_script:"region-markers" }}
+    {{ audit_velocity|json_script:"velocity-data" }}
+
+    <div class="modal" id="plan-modal">
+        <div class="modal-content">
+            <button class="close-modal" data-modal-close>Close</button>
+            <h2>Plan comparison</h2>
+            {% if plans %}
+                <div class="plan-badges">
+                    {% for plan in plans %}
+                        <span class="plan-badge">{{ plan.name }} · {{ plan.display_price }}</span>
+                    {% endfor %}
+                </div>
+                <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            {% for plan in plans %}
+                                <th>{{ plan.name }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in plan_feature_matrix %}
+                            <tr>
+                                <td>{{ row.feature }}</td>
+                                {% for item in row.plans %}
+                                    <td>{{ item.available|yesno:"✔,✖" }}</td>
+                                {% endfor %}
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+            {% else %}
+                <p class="empty">No plans to compare right now.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const statusEl = document.getElementById("status-data");
+            const trendEl = document.getElementById("trend-data");
+            const planEl = document.getElementById("plan-data");
+            const markersEl = document.getElementById("region-markers");
+            const velocityEl = document.getElementById("velocity-data");
+            const modal = document.getElementById("plan-modal");
+            document.querySelectorAll(".modal-toggle").forEach(button => {
+                button.addEventListener("click", () => {
+                    if (modal) modal.classList.add("active");
+                });
+            });
+            document.querySelectorAll("[data-modal-close]").forEach(button => {
+                button.addEventListener("click", () => {
+                    if (modal) modal.classList.remove("active");
+                });
+            });
+            if (modal) {
+                modal.addEventListener("click", (event) => {
+                    if (event.target === modal) modal.classList.remove("active");
+                });
+            }
+
+            if (velocityEl) {
+                const velocityData = JSON.parse(velocityEl.textContent || "[]");
+                const ctx = document.getElementById("velocityChart");
+                if (ctx && window.Chart && velocityData.length) {
+                    new Chart(ctx, {
+                        type: "line",
+                        data: {
+                            labels: velocityData.map(item => item.week),
+                            datasets: [
+                                {
+                                    label: "Audits",
+                                    data: velocityData.map(item => item.count),
+                                    tension: 0.35,
+                                    fill: true,
+                                    backgroundColor: "rgba(37, 99, 235, 0.18)",
+                                    borderColor: "rgba(37, 99, 235, 0.9)",
+                                    pointRadius: 4,
+                                    pointBackgroundColor: "#1d4ed8",
+                                },
+                            ],
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: {
+                                    callbacks: {
+                                        label: (context) => `${context.parsed.y} audits`,
+                                    },
+                                },
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: { precision: 0 },
+                                    grid: { color: "rgba(148, 163, 184, 0.2)" },
+                                },
+                                x: {
+                                    grid: { display: false },
+                                },
+                            },
+                        },
+                    });
+                }
+            }
+
+            if (statusEl) {
+                const statusData = JSON.parse(statusEl.textContent || "[]");
+                const ctx = document.getElementById("statusChart");
+                if (ctx && window.Chart) {
+                    new Chart(ctx, {
+                        type: "bar",
+                        data: {
+                            labels: statusData.map(item => item.status),
+                            datasets: [
+                                {
+                                    label: "Audits",
+                                    data: statusData.map(item => item.count),
+                                    backgroundColor: ["#22c55e", "#f97316", "#ef4444"],
+                                    borderRadius: 12,
+                                },
+                            ],
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                y: { beginAtZero: true, ticks: { precision: 0 } },
+                            },
+                        },
+                    });
+                }
+            }
+
+            if (trendEl) {
+                const trendData = JSON.parse(trendEl.textContent || "[]");
+                const ctx = document.getElementById("trendChart");
+                if (ctx && window.Chart) {
+                    new Chart(ctx, {
+                        type: "line",
+                        data: {
+                            labels: trendData.map(item => item.timestamp),
+                            datasets: [
+                                {
+                                    label: "Score",
+                                    data: trendData.map(item => item.score),
+                                    borderColor: "#2563eb",
+                                    backgroundColor: "rgba(37,99,235,0.2)",
+                                    tension: 0.35,
+                                    fill: true,
+                                },
+                            ],
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                y: { suggestedMin: 0, suggestedMax: 100 },
+                            },
+                        },
+                    });
+                }
+            }
+
+            if (planEl) {
+                const planData = JSON.parse(planEl.textContent || "[]");
+                const ctx = document.getElementById("planChart");
+                if (ctx && window.Chart) {
+                    new Chart(ctx, {
+                        type: "doughnut",
+                        data: {
+                            labels: planData.map(item => item.name),
+                            datasets: [
+                                {
+                                    data: planData.map(item => item.count),
+                                    backgroundColor: ["#1d4ed8", "#60a5fa", "#9333ea", "#f97316"],
+                                    borderWidth: 0,
+                                },
+                            ],
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: { position: "bottom" },
+                            },
+                        },
+                    });
+                }
+            }
+
+            if (markersEl) {
+                const markerData = JSON.parse(markersEl.textContent || "[]");
+                const mapEl = document.getElementById("audit-map");
+                if (mapEl && window.L) {
+                    const map = L.map("audit-map", { zoomControl: false }).setView([20, 0], 2);
+                    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                        attribution: "&copy; OpenStreetMap contributors",
+                    }).addTo(map);
+                    markerData.forEach(marker => {
+                        const popup = `<strong>${marker.name}</strong><br/>Audits: ${marker.count}`;
+                        L.circleMarker(marker.coords, {
+                            radius: 8 + marker.count,
+                            weight: 1,
+                            color: "#1d4ed8",
+                            fillColor: "#3b82f6",
+                            fillOpacity: 0.65,
+                        }).addTo(map).bindPopup(popup);
+                    });
+                }
+            }
+        });
+    </script>
 </body>
 </html>

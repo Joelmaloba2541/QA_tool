@@ -7,6 +7,9 @@ from audit import views
 urlpatterns = [
     path("", views.audit_dashboard, name="audit-dashboard"),
     path("pricing/", views.pricing, name="pricing"),
+    path("pricing/checkout/<slug:slug>/", views.payment_checkout, name="payment-checkout"),
+    path("pricing/gateway/callback/", views.payment_gateway_callback, name="payment-gateway-callback"),
+    path("pricing/gateway/<slug:slug>/", views.payment_gateway_redirect, name="payment-gateway"),
     path("checkout/<slug:slug>/", views.create_checkout_session, name="checkout"),
     path("audit/<int:pk>/download/", views.download_audit_pdf, name="audit-download"),
     path("robots.txt", views.robots_txt, name="robots"),
