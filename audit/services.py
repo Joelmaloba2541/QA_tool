@@ -369,7 +369,7 @@ def generate_audit_pdf(audit: AuditRun) -> bytes:
         canvas.drawRightString(
             document.leftMargin + document.width,
             document.bottomMargin - 0.5 * inch,
-            f"Page {document.page}",
+            f"Page {canvas.getPageNumber()}",
         )
         canvas.restoreState()
 
