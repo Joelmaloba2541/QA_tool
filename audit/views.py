@@ -7,10 +7,14 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.views import LoginView
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse_lazy
+from django.urls import reverse_lazy, path, include
 
 from audit.models import AuditRun, Payment, SubscriptionPlan, UserSubscription, Website
 from audit.services import generate_audit_pdf, run_audit
+
+urlpatterns = [
+    path('robots.txt', robots_txt),
+]
 
 class AuditLoginView(LoginView):
     template_name = "registration/login.html"
@@ -18,6 +22,15 @@ class AuditLoginView(LoginView):
 
     def get_success_url(self):
         return self.get_redirect_url() or reverse_lazy("audit-dashboard")
+
+
+def robots_txt(request):
+    lines = [
+        "User-agent: *",
+        "Disallow:",
+    ]
+    content = "\n".join(lines) + "\n"
+    return HttpResponse(content, content_type="text/plain")
 
 
 def _resolve_subscription(user):
@@ -106,6 +119,12 @@ def audit_dashboard(request):
     )[:5]
     websites = Website.objects.order_by("name", "url").all()
 
+    usage_percent = None
+    if subscription and getattr(subscription.plan, "audit_quota", 0):
+        quota = subscription.plan.audit_quota or 0
+        if quota > 0:
+            usage_percent = min(100, int(round((subscription.audits_used / quota) * 100)))
+
     return render(
         request,
         "audit/dashboard.html",
@@ -118,6 +137,7 @@ def audit_dashboard(request):
             "websites": websites,
             "subscription": subscription,
             "remaining_audits": remaining_audits,
+            "subscription_usage_percent": usage_percent,
             "plans": SubscriptionPlan.objects.filter(is_public=True, is_active=True).order_by("sort_order"),
             "trial_plan": SubscriptionPlan.get_trial_plan(),
         },

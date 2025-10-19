@@ -1,0 +1,106 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>QA Insights Pricing</title>
+    <meta name="description" content="Compare QA Insights subscription plans, activate your free trial, and scale website quality audits with professional reports.">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/svg+xml" href="{% static 'audit/favicon.svg' %}">
+    <style>
+        :root { color-scheme: light; }
+        body { margin: 0; font-family: "Inter", "Segoe UI", Arial, sans-serif; background: #f5f9ff; color: #0f172a; min-height: 100vh; display: flex; flex-direction: column; }
+        .topbar { background: rgba(255, 255, 255, 0.95); border-bottom: 1px solid rgba(15, 23, 42, 0.06); position: sticky; top: 0; z-index: 10; }
+        .topbar .bar { max-width: 1024px; margin: 0 auto; padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+        .brand { font-weight: 700; font-size: 1.05rem; letter-spacing: -0.01em; color: #0f172a; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; }
+        .brand span { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; border-radius: 0.75rem; background: linear-gradient(135deg, #2d8cff, #60a5fa); color: #fff; font-size: 1rem; }
+        .nav-actions { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+        .nav-link { font-weight: 600; color: #1d4ed8; text-decoration: none; padding: 0.45rem 0.75rem; border-radius: 999px; background: rgba(29, 78, 216, 0.08); transition: background 0.2s ease; }
+        .nav-link:hover { background: rgba(29, 78, 216, 0.16); }
+        .cta { display: inline-flex; align-items: center; justify-content: center; padding: 0.65rem 1.4rem; border-radius: 999px; background: #2d8cff; color: #fff; font-weight: 600; text-decoration: none; transition: background 0.2s ease; }
+        .cta:hover { background: #1c6fd5; }
+        main { flex: 1 0 auto; max-width: 1024px; width: 100%; margin: 0 auto; padding: 3rem 1.5rem 4rem; display: grid; gap: 2.5rem; }
+        header { display: grid; gap: 1rem; text-align: center; }
+        header h1 { margin: 0; font-size: clamp(2rem, 5vw, 3rem); letter-spacing: -0.03em; }
+        header p { margin: 0; color: #475569; font-size: 1rem; }
+        .plans { display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+        .plan { background: #fff; border-radius: 18px; padding: 1.75rem; box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08); display: grid; gap: 1rem; border: 1px solid rgba(59,130,246,0.12); }
+        .plan h2 { margin: 0; font-size: 1.35rem; }
+        .price { font-size: 2.25rem; font-weight: 700; color: #0f172a; }
+        .period { font-size: 0.95rem; color: #475569; }
+        ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.6rem; color: #475569; }
+        li { padding-left: 1.4rem; position: relative; }
+        li::before { content: ""; width: 0.5rem; height: 0.5rem; border-radius: 999px; background: #22c55e; position: absolute; left: 0; top: 0.55rem; }
+        form { margin: 0; }
+        .plan button { width: 100%; padding: 0.75rem 1rem; border-radius: 999px; border: none; background: #0f172a; color: #fff; font-weight: 600; cursor: pointer; transition: background 0.2s ease; }
+        .plan button:hover { background: #1f2937; }
+        .trial-card { background: linear-gradient(135deg, #1d4ed8, #60a5fa); color: #fff; padding: 1.75rem; border-radius: 18px; display: grid; gap: 0.75rem; box-shadow: 0 18px 40px rgba(37, 99, 235, 0.25); }
+        footer { padding: 2rem 1.5rem 3rem; text-align: center; color: #94a3b8; font-size: 0.9rem; }
+        @media (max-width: 640px) {
+            .topbar .bar { flex-direction: column; align-items: flex-start; gap: 0.6rem; }
+            header { text-align: left; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="topbar">
+        <div class="bar">
+            <a href="{% url 'audit-dashboard' %}" class="brand"><span>Q</span>QA Insights</a>
+            <div class="nav-actions">
+                <a href="{% url 'audit-dashboard' %}" class="nav-link">Dashboard</a>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'logout' %}" class="nav-link">Sign out</a>
+                {% else %}
+                    <a href="{% url 'login' %}" class="nav-link">Sign in</a>
+                    <a href="{% url 'signup' %}" class="cta">Start free trial</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+    <main>
+        <header>
+            <h1>Choose the plan that fits your audit workflow</h1>
+            <p>Run expert-grade QA audits with downloadable reports, automated link checks, and subscription management built for product teams.</p>
+        </header>
+
+        {% if trial_plan %}
+            <section class="trial-card">
+                <h2>Free trial available</h2>
+                <p>Activate one complimentary audit for every new account. No credit card required.</p>
+                <form method="post" action="{% url 'checkout' trial_plan.slug %}">
+                    {% csrf_token %}
+                    <button type="submit">Activate free trial</button>
+                </form>
+            </section>
+        {% endif %}
+
+        <section class="plans">
+            {% for plan in plans %}
+                <article class="plan">
+                    <div>
+                        <h2>{{ plan.name }}</h2>
+                        <div class="price">{{ plan.display_price }}</div>
+                        <div class="period">{{ plan.get_billing_interval_display }}</div>
+                    </div>
+                    {% if plan.features %}
+                        <ul>
+                            {% for feature in plan.features %}
+                                <li>{{ feature }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                    <form method="post" action="{% url 'checkout' plan.slug %}">
+                        {% csrf_token %}
+                        <button type="submit">Choose {{ plan.name }}</button>
+                    </form>
+                </article>
+            {% empty %}
+                <p>No paid plans are currently available. Check back soon.</p>
+            {% endfor %}
+        </section>
+    </main>
+    <footer>
+        &copy; {% now "Y" %} QA Insights. All rights reserved.
+    </footer>
+</body>
+</html>

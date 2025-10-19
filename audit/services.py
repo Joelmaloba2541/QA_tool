@@ -12,12 +12,11 @@ from urllib.parse import urljoin, urlparse
 from django.utils.text import Truncator
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import ParagraphStyle
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfgen import canvas
-from reportlab.platypus import Paragraph
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 from .models import AuditFinding, AuditMetric, AuditRun, Website
 
@@ -307,107 +306,186 @@ def run_multi_page_audit(website: Website, urls: Iterable[str], user=None) -> Li
 
 def generate_audit_pdf(audit: AuditRun) -> bytes:
     buffer = BytesIO()
-    pdf = canvas.Canvas(buffer, pagesize=letter)
-    width, height = letter
 
     try:
         pdfmetrics.registerFont(TTFont("Roboto", "Roboto-Regular.ttf"))
-        font_name = "Roboto"
+        base_font = "Roboto"
     except Exception:
-        font_name = "Helvetica"
+        base_font = "Helvetica"
 
-    margin = inch
-    y = height - margin
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=letter,
+        leftMargin=0.9 * inch,
+        rightMargin=0.9 * inch,
+        topMargin=0.9 * inch,
+        bottomMargin=0.9 * inch,
+    )
 
-    pdf.setFont(font_name, 20)
-    pdf.setFillColor(colors.HexColor("#2d8cff"))
-    pdf.drawString(margin, y, "QA Audit Report")
-    y -= 0.4 * inch
+    styles = getSampleStyleSheet()
+    styles["Normal"].fontName = base_font
+    styles["Heading1"].fontName = base_font
+    styles["Heading2"].fontName = base_font
 
-    pdf.setFont(font_name, 12)
-    pdf.setFillColor(colors.black)
-    details = [
-        ("Website", audit.website.name or audit.website.url),
-        ("URL", audit.url),
-        ("Status", audit.status.title()),
-        ("Score", str(audit.score)),
-        ("Response Time", f"{audit.response_time_ms} ms"),
-        ("Generated", audit.created_at.strftime("%Y-%m-%d %H:%M")),
+    title_style = ParagraphStyle(
+        "ReportTitle",
+        parent=styles["Heading1"],
+        fontName=base_font,
+        fontSize=22,
+        textColor=colors.HexColor("#1d4ed8"),
+        spaceAfter=6,
+    )
+    subtitle_style = ParagraphStyle(
+        "ReportSubtitle",
+        parent=styles["Heading2"],
+        fontName=base_font,
+        fontSize=14,
+        textColor=colors.HexColor("#475569"),
+        spaceAfter=14,
+    )
+    section_style = ParagraphStyle(
+        "SectionHeading",
+        parent=styles["Heading2"],
+        fontName=base_font,
+        fontSize=16,
+        textColor=colors.HexColor("#0f172a"),
+        spaceBefore=18,
+        spaceAfter=8,
+    )
+    summary_style = ParagraphStyle(
+        "Summary",
+        parent=styles["Normal"],
+        fontName=base_font,
+        fontSize=11,
+        leading=15,
+        textColor=colors.HexColor("#1e293b"),
+    )
+
+    def _header_footer(canvas, document):
+        canvas.saveState()
+        canvas.setFont(base_font, 9)
+        canvas.setFillColor(colors.HexColor("#94a3b8"))
+        canvas.drawString(document.leftMargin, document.height + document.topMargin - 0.4 * inch, "QA Insights")
+        canvas.drawRightString(
+            document.leftMargin + document.width,
+            document.bottomMargin - 0.5 * inch,
+            f"Page {document.page}",
+        )
+        canvas.restoreState()
+
+    story = []
+    story.append(Paragraph("QA Insights Audit Report", title_style))
+    story.append(
+        Paragraph(
+            audit.website.name or audit.website.url,
+            subtitle_style,
+        )
+    )
+
+    detail_data = [
+        ["Website", audit.website.name or audit.website.url],
+        ["URL", audit.url],
+        ["Status", audit.status.title()],
+        ["Score", str(audit.score)],
+        ["Response Time", f"{audit.response_time_ms} ms"],
+        ["Generated", audit.created_at.strftime("%Y-%m-%d %H:%M")],
     ]
 
-    for label, value in details:
-        pdf.drawString(margin, y, f"{label}:")
-        pdf.setFillColor(colors.HexColor("#555555"))
-        pdf.drawString(margin + 1.6 * inch, y, value)
-        pdf.setFillColor(colors.black)
-        y -= 0.3 * inch
+    detail_table = Table(detail_data, colWidths=[1.7 * inch, doc.width - 1.7 * inch])
+    detail_table.setStyle(
+        TableStyle(
+            [
+                ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#eff6ff")),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#1d4ed8")),
+                ("FONTNAME", (0, 0), (-1, -1), base_font),
+                ("FONTSIZE", (0, 0), (-1, -1), 10),
+                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f8fafc")]),
+                ("INNERGRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#dbeafe")),
+                ("BOX", (0, 0), (-1, -1), 0.6, colors.HexColor("#93c5fd")),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ]
+        )
+    )
+    story.append(detail_table)
+    story.append(Spacer(1, 18))
 
-    y -= 0.2 * inch
-
-    pdf.setFillColor(colors.HexColor("#2d8cff"))
-    pdf.setFont(font_name, 14)
-    pdf.drawString(margin, y, "Summary")
-    y -= 0.3 * inch
-    pdf.setFillColor(colors.black)
-
-    summary_style = ParagraphStyle("summary", fontName=font_name, fontSize=11, leading=14)
-    summary = Paragraph(audit.summary or "No summary available.", summary_style)
-    _, summary_height = summary.wrapOn(pdf, width - 2 * margin, y)
-    summary.drawOn(pdf, margin, y - summary_height)
-    y -= summary_height + 0.4 * inch
+    story.append(Paragraph("Summary", section_style))
+    story.append(Paragraph(audit.summary or "No summary available.", summary_style))
 
     findings = list(audit.findings.all())
     if findings:
-        pdf.setFont(font_name, 14)
-        pdf.setFillColor(colors.HexColor("#ff5c5c"))
-        pdf.drawString(margin, y, "Findings")
-        y -= 0.3 * inch
-        pdf.setFillColor(colors.black)
-
+        story.append(Paragraph("Findings", section_style))
+        severity_palette = {
+            AuditFinding.SEVERITY_LOW: colors.HexColor("#6366f1"),
+            AuditFinding.SEVERITY_MEDIUM: colors.HexColor("#f97316"),
+            AuditFinding.SEVERITY_HIGH: colors.HexColor("#ef4444"),
+        }
         for finding in findings:
-            if y < margin:
-                pdf.showPage()
-                y = height - margin
-                pdf.setFont(font_name, 14)
-                pdf.setFillColor(colors.HexColor("#ff5c5c"))
-                pdf.drawString(margin, y, "Findings (cont.)")
-                y -= 0.3 * inch
-                pdf.setFillColor(colors.black)
-
-            pdf.setFont(font_name, 12)
-            pdf.drawString(margin, y, f"{finding.category.title()} – {finding.severity.title()}")
-            y -= 0.25 * inch
-
-            text_style = ParagraphStyle("finding", fontName=font_name, fontSize=11, leading=13)
-            for field in (finding.title, finding.description, finding.recommendation):
-                paragraph = Paragraph(field, text_style)
-                _, para_height = paragraph.wrapOn(pdf, width - 2 * margin, y)
-                paragraph.drawOn(pdf, margin, y - para_height)
-                y -= para_height + 0.15 * inch
-
-            y -= 0.1 * inch
+            badge_color = severity_palette.get(finding.severity, colors.HexColor("#0ea5e9"))
+            finding_data = [
+                [
+                    Paragraph(
+                        f"<b>{finding.category.title()}</b> – {finding.severity.title()}",
+                        ParagraphStyle("Badge", parent=summary_style, textColor=colors.white),
+                    ),
+                    "",
+                ],
+                [
+                    Paragraph("<b>Issue</b>", summary_style),
+                    Paragraph(finding.title, summary_style),
+                ],
+                [
+                    Paragraph("<b>Description</b>", summary_style),
+                    Paragraph(finding.description, summary_style),
+                ],
+                [
+                    Paragraph("<b>Recommendation</b>", summary_style),
+                    Paragraph(finding.recommendation, summary_style),
+                ],
+            ]
+            finding_table = Table(
+                finding_data,
+                colWidths=[1.6 * inch, doc.width - 1.6 * inch],
+                style=TableStyle(
+                    [
+                        ("SPAN", (0, 0), (-1, 0)),
+                        ("BACKGROUND", (0, 0), (-1, 0), badge_color),
+                        ("BACKGROUND", (0, 1), (-1, -1), colors.white),
+                        ("LINEBEFORE", (0, 0), (-1, -1), 0.4, colors.HexColor("#bfdbfe")),
+                        ("LINEABOVE", (0, 0), (-1, -1), 0.4, colors.HexColor("#bfdbfe")),
+                        ("LINEBELOW", (0, 0), (-1, -1), 0.4, colors.HexColor("#bfdbfe")),
+                        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+                        ("LEFTPADDING", (0, 0), (-1, -1), 8),
+                        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+                        ("TOPPADDING", (0, 0), (-1, -1), 6),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                    ]
+                ),
+            )
+            story.append(finding_table)
+            story.append(Spacer(1, 12))
 
     metrics = list(audit.metrics.all())
     if metrics:
-        if y < margin + inch:
-            pdf.showPage()
-            y = height - margin
-        pdf.setFont(font_name, 14)
-        pdf.setFillColor(colors.HexColor("#2d8cff"))
-        pdf.drawString(margin, y, "Key Metrics")
-        y -= 0.3 * inch
-        pdf.setFillColor(colors.black)
+        story.append(Paragraph("Key Metrics", section_style))
+        metrics_data = [["Metric", "Value"]]
+        metrics_data.extend([[metric.label, metric.value] for metric in metrics])
+        metrics_table = Table(metrics_data, colWidths=[2.2 * inch, doc.width - 2.2 * inch])
+        metrics_table.setStyle(
+            TableStyle(
+                [
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0f172a")),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+                    ("FONTNAME", (0, 0), (-1, -1), base_font),
+                    ("FONTSIZE", (0, 0), (-1, -1), 10),
+                    ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f8fafc")]),
+                    ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#cbd5f5")),
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ]
+            )
+        )
+        story.append(metrics_table)
 
-        for metric in metrics:
-            pdf.setFont(font_name, 12)
-            pdf.drawString(margin, y, metric.label)
-            pdf.setFillColor(colors.HexColor("#555555"))
-            pdf.drawString(margin + 1.6 * inch, y, metric.value)
-            pdf.setFillColor(colors.black)
-            y -= 0.25 * inch
-
-    pdf.showPage()
-    pdf.save()
-
+    doc.build(story, onFirstPage=_header_footer, onLaterPages=_header_footer)
     buffer.seek(0)
     return buffer.read()

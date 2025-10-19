@@ -4,50 +4,59 @@
 <head>
     <meta charset="utf-8">
     <title>QA Tool Dashboard</title>
+    <meta name="description" content="Monitor web quality assurance audits, download PDF reports, and manage SaaS subscriptions in one workspace.">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/svg+xml" href="{% static 'audit/favicon.svg' %}">
     <style>
         :root { color-scheme: light; }
-        body { font-family: "Inter", "Segoe UI", Arial, sans-serif; margin: 0; background: linear-gradient(135deg, #f5f8ff 0%, #fff 60%); color: #0f172a; }
-        .shell { max-width: 1100px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
-        header { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem; position: relative; overflow: hidden; }
-        header::before { content: ""; position: absolute; inset: -120% -50% 40%; background: conic-gradient(from 45deg, rgba(37,99,235,0.22), rgba(139,92,246,0.18), rgba(45,212,191,0.16), rgba(37,99,235,0.22)); animation: gradientSweep 18s linear infinite; filter: blur(60px); opacity: 0.9; }
-        header > * { position: relative; z-index: 1; }
+        body { font-family: "Inter", "Segoe UI", Arial, sans-serif; margin: 0; background: #f5f9ff; color: #0f172a; min-height: 100vh; display: flex; flex-direction: column; }
+        .topbar { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(6px); border-bottom: 1px solid rgba(15, 23, 42, 0.06); position: sticky; top: 0; z-index: 10; }
+        .topbar .bar { max-width: 1100px; margin: 0 auto; padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+        .brand { font-weight: 700; font-size: 1.1rem; letter-spacing: -0.01em; color: #0f172a; text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; }
+        .brand span { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; border-radius: 0.75rem; background: linear-gradient(135deg, #2d8cff, #60a5fa); color: #fff; font-size: 1rem; }
+        .nav-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 0.75rem; }
+        .nav-link { font-weight: 600; color: #1d4ed8; text-decoration: none; padding: 0.45rem 0.75rem; border-radius: 999px; background: rgba(29, 78, 216, 0.08); transition: background 0.2s ease; }
+        .nav-link:hover { background: rgba(29, 78, 216, 0.16); }
+        .welcome { color: #475569; font-size: 0.95rem; }
+        main.shell { flex: 1 0 auto; max-width: 1100px; width: 100%; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+        header { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem; }
         header h1 { font-size: 2.5rem; margin: 0; letter-spacing: -0.03em; }
         header p { margin: 0; color: #475569; font-size: 1rem; }
         .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
-        .button { display: inline-flex; align-items: center; justify-content: center; padding: 0.7rem 1.4rem; border-radius: 999px; background: linear-gradient(135deg, #2d8cff 0%, #7c3aed 90%); color: #fff; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease; animation: floatWave 9s ease-in-out infinite; }
-        .button:hover { transform: translateY(-4px) scale(1.02); box-shadow: 0 16px 32px rgba(45, 140, 255, 0.28); }
+        .button { display: inline-flex; align-items: center; justify-content: center; padding: 0.7rem 1.4rem; border-radius: 999px; background: #2d8cff; color: #fff; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: background 0.2s ease; }
+        .button:hover { background: #1c6fd5; }
         .button.secondary { background: #0f172a; }
+        .link-button { display: inline-flex; align-items: center; justify-content: center; padding: 0.45rem 0.9rem; border-radius: 999px; background: rgba(15, 23, 42, 0.08); color: #0f172a; font-weight: 600; text-decoration: none; transition: background 0.2s ease; }
+        .link-button:hover { background: rgba(15, 23, 42, 0.16); }
         .messages { margin-bottom: 1.5rem; }
-        .message { padding: 0.9rem 1.2rem; border-radius: 12px; margin-bottom: 0.75rem; font-weight: 500; animation: fadeUp 0.4s ease both, glowPulse 7s ease-in-out infinite alternate; }
+        .message { padding: 0.9rem 1.2rem; border-radius: 12px; margin-bottom: 0.75rem; font-weight: 500; }
         .message.success { background: rgba(34, 197, 94, 0.12); color: #15803d; }
         .message.warning { background: rgba(251, 191, 36, 0.16); color: #92400e; }
         .message.error { background: rgba(248, 113, 113, 0.16); color: #b91c1c; }
-        form { background: #fff; padding: 1.75rem; border-radius: 18px; box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08); margin-bottom: 2.5rem; display: grid; gap: 1rem; position: relative; overflow: hidden; }
-        form::before { content: ""; position: absolute; inset: -40% 20% 70% -20%; background: radial-gradient(circle, rgba(45,140,255,0.14) 0%, transparent 60%); }
+        form { background: #fff; padding: 1.75rem; border-radius: 18px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.09); margin-bottom: 2.5rem; display: grid; gap: 1rem; }
         form h2 { margin: 0; font-size: 1.35rem; position: relative; z-index: 1; }
-        label { display: block; font-weight: 600; margin-bottom: 0.35rem; color: #1e293b; position: relative; z-index: 1; }
-        select, input, textarea { width: 100%; padding: 0.8rem 0.9rem; border-radius: 10px; border: 1px solid #d6e0f0; background: rgba(248, 250, 252, 0.8); transition: border 0.2s ease, box-shadow 0.2s ease; position: relative; z-index: 1; }
+        label { display: block; font-weight: 600; margin-bottom: 0.35rem; color: #1e293b; }
+        select, input, textarea { width: 100%; padding: 0.8rem 0.9rem; border-radius: 10px; border: 1px solid #d6e0f0; background: rgba(248, 250, 252, 0.8); transition: border 0.2s ease, box-shadow 0.2s ease; }
         select:focus, input:focus, textarea:focus { border-color: #2d8cff; outline: none; box-shadow: 0 0 0 3px rgba(45, 140, 255, 0.2); }
         button[type="submit"] { justify-self: flex-start; position: relative; z-index: 1; }
-        .muted { color: #64748b; font-size: 0.95rem; position: relative; z-index: 1; }
+        .muted { color: #64748b; font-size: 0.95rem; }
         .layout { display: grid; gap: 1.5rem; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); align-items: start; }
         .stack { display: grid; gap: 1.5rem; }
-        .card { background: #fff; border-radius: 18px; padding: 1.75rem; box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06); position: relative; overflow: hidden; animation: fadeUp 0.6s ease both; }
-        .card::after { content: ""; position: absolute; inset: 65% -35% -35% 60%; background: radial-gradient(circle, rgba(45,140,255,0.08) 0%, transparent 65%); animation: ripplePulse 12s ease-in-out infinite; }
-        .card h2, .card h3 { margin-top: 0; margin-bottom: 1rem; font-size: 1.25rem; position: relative; z-index: 1; }
-        .summary { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-bottom: 1.25rem; position: relative; z-index: 1; }
+        .card { background: #fff; border-radius: 18px; padding: 1.75rem; box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08); position: relative; }
+        .card h2, .card h3 { margin-top: 0; margin-bottom: 1rem; font-size: 1.25rem; }
+        .summary { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-bottom: 1.25rem; }
         .summary h2 { margin: 0; font-size: 1.5rem; }
         .summary .status { padding: 0.35rem 0.9rem; border-radius: 999px; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; background: rgba(45, 140, 255, 0.1); color: #1d4ed8; }
         .status.completed { background: rgba(34, 197, 94, 0.14); color: #047857; }
         .status.failed { background: rgba(248, 113, 113, 0.18); color: #b91c1c; }
         .summary .muted { margin-left: auto; }
         .grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); position: relative; z-index: 1; }
-        .metric { background: linear-gradient(145deg, #f8fbff 0%, #edf4ff 100%); border-radius: 14px; padding: 1.1rem; transition: transform 0.2s ease; animation: pulse 5s ease infinite; }
+        .metric { background: linear-gradient(145deg, #f8fbff 0%, #edf4ff 100%); border-radius: 14px; padding: 1.1rem; }
         .metric strong { display: block; font-size: 0.85rem; letter-spacing: 0.08em; text-transform: uppercase; color: #475569; margin-bottom: 0.4rem; }
         .metric div { font-size: 1.5rem; font-weight: 700; color: #0f172a; }
-        .metric:hover { transform: translateY(-4px); }
-        table { width: 100%; border-collapse: collapse; position: relative; z-index: 1; }
+        .metric:hover { background-color: #e5e7eb; }
+        .table-wrapper { overflow-x: auto; border-radius: 16px; }
+        table { width: 100%; border-collapse: collapse; position: relative; z-index: 1; min-width: 560px; }
         th, td { padding: 0.85rem 0.75rem; text-align: left; border-bottom: 1px solid rgba(226, 232, 240, 0.8); }
         th { font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: #475569; background: rgba(15, 23, 42, 0.02); }
         tbody tr:hover { background: rgba(241, 245, 249, 0.6); }
@@ -56,35 +65,53 @@
         .tag.low { background: #6366f1; }
         .tag.medium { background: #f97316; }
         .tag.high { background: #ef4444; }
-        .subscription-card { display: grid; gap: 1rem; background: linear-gradient(130deg, rgba(45,140,255,0.12), rgba(56,189,248,0.18)); border-radius: 18px; padding: 1.4rem; color: #0f172a; animation: fadeUp 0.6s ease both, glowPulse 8s ease-in-out infinite alternate; position: relative; overflow: hidden; }
-        .subscription-card::before { content: ""; position: absolute; inset: -30% 10% 70% -20%; background: radial-gradient(circle, rgba(255,255,255,0.5), transparent 70%); opacity: 0.5; animation: shimmer 14s linear infinite; }
+        .subscription-card { display: grid; gap: 1rem; background: #f0f6ff; border-radius: 18px; padding: 1.4rem; color: #0f172a; border: 1px solid rgba(59,130,246,0.12); }
         .subscription-card .title { font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; }
         .subscription-meta { display: flex; flex-wrap: wrap; gap: 1rem; font-size: 0.9rem; color: #0f172a; }
         .quota { display: grid; gap: 0.5rem; }
         .progress-bar { height: 8px; border-radius: 999px; background: rgba(15, 23, 42, 0.15); overflow: hidden; }
-        .progress-bar span { display: block; height: 100%; background: linear-gradient(90deg, #2d8cff, #8b5cf6); transition: width 0.6s ease; }
+        .progress-bar span { display: block; height: 100%; background: linear-gradient(90deg, #2d8cff, #60a5fa); width: calc(var(--usage, 0) * 1%); transition: width 0.3s ease; }
         .plan-grid { display: grid; gap: 1.2rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); position: relative; z-index: 1; }
-        .plan { background: #fff; border-radius: 16px; padding: 1.4rem; box-shadow: 0 16px 32px rgba(15, 23, 42, 0.07); display: grid; gap: 0.75rem; position: relative; overflow: hidden; }
-        .plan::before { content: ""; position: absolute; inset: -40% -20% 60% 20%; background: linear-gradient(120deg, rgba(124,58,237,0.16), rgba(56,189,248,0.12)); animation: shimmer 12s linear infinite; opacity: 0.8; }
+        .plan { background: #fff; border-radius: 16px; padding: 1.4rem; box-shadow: 0 10px 20px rgba(15, 23, 42, 0.08); display: grid; gap: 0.75rem; position: relative; }
         .plan h4 { margin: 0; font-size: 1.1rem; }
         .plan .price { font-size: 1.8rem; font-weight: 700; }
         .plan ul { margin: 0; padding-left: 1rem; color: #475569; display: grid; gap: 0.4rem; }
         .plan form { margin: 0; padding: 0; box-shadow: none; background: none; display: contents; }
-        .plan button { width: 100%; animation: floatWave 11s ease-in-out infinite; }
+        .plan button { width: 100%; }
         .empty { color: #94a3b8; font-style: italic; }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pulse { 0%, 100% { box-shadow: 0 18px 40px rgba(45, 140, 255, 0.08); } 50% { box-shadow: 0 22px 55px rgba(45, 140, 255, 0.18); } }
-        @keyframes floatWave { 0%, 100% { transform: translateY(0) scale(1); } 25% { transform: translateY(-4px) scale(1.01); } 50% { transform: translateY(1px) scale(0.99); } 75% { transform: translateY(-2px) scale(1.02); } }
-        @keyframes gradientSweep { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @keyframes glowPulse { 0% { box-shadow: 0 0 0 rgba(56,189,248,0); } 50% { box-shadow: 0 0 22px rgba(59,130,246,0.35); } 100% { box-shadow: 0 0 0 rgba(56,189,248,0); } }
-        @keyframes shimmer { 0% { transform: translateX(-30%) translateY(-10%); } 50% { transform: translateX(15%) translateY(10%); } 100% { transform: translateX(45%) translateY(-5%); } }
-        @keyframes ripplePulse { 0% { transform: scale(0.95); opacity: 0.55; } 50% { transform: scale(1.05); opacity: 0.35; } 100% { transform: scale(0.95); opacity: 0.55; } }
-        @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } header h1 { font-size: 2rem; } }
+        footer { padding: 2rem 1.5rem 3rem; text-align: center; color: #94a3b8; font-size: 0.9rem; }
+        @media (max-width: 900px) {
+            .topbar .bar { padding: 0.85rem 1rem; }
+            .nav-actions { justify-content: flex-end; }
+            header h1 { font-size: 2rem; }
+            .layout { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 640px) {
+            .topbar .bar { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+            .nav-actions { width: 100%; justify-content: space-between; }
+            .nav-link { padding: 0.4rem 0.65rem; }
+            header { text-align: left; }
+        }
     </style>
 </head>
 <body>
-    <div class="shell">
-        <header class="animate-fade">
+    <nav class="topbar">
+        <div class="bar">
+            <a href="{% url 'audit-dashboard' %}" class="brand"><span>Q</span>QA Insights</a>
+            <div class="nav-actions">
+                <a href="{% url 'pricing' %}" class="nav-link">Pricing</a>
+                {% if user.is_authenticated %}
+                    <span class="welcome">Signed in as {{ user.get_short_name|default:user.username }}</span>
+                    <a href="{% url 'logout' %}" class="nav-link">Sign out</a>
+                {% else %}
+                    <a href="{% url 'login' %}" class="nav-link">Sign in</a>
+                    <a href="{% url 'signup' %}" class="button">Create account</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+    <main class="shell">
+        <header>
             <div>
                 <h1>QA Insights Control Center</h1>
                 <p>Deliver 99% accurate accessibility, SEO, and performance audits with instant PDF reports.</p>
@@ -118,10 +145,13 @@
                 {% if subscription.plan.audit_quota %}
                     <div class="quota">
                         <div>Audits used {{ subscription.audits_used }} / {{ subscription.plan.audit_quota }}</div>
-                        <div class="progress-bar">
-                            <span style="width: {% widthratio subscription.audits_used subscription.plan.audit_quota 100 %}%"></span>
+                        <div class="progress-bar" style="--usage: {{ subscription_usage_percent|default_if_none:'0' }}">
+                            <span></span>
                         </div>
-                        <div class="muted">Remaining: {{ remaining_audits }} audit{{ remaining_audits|pluralize }}</div>
+                        <div class="muted">
+                            Remaining: {{ remaining_audits }} audit{{ remaining_audits|pluralize }} ·
+                            {{ subscription_usage_percent|default_if_none:0 }}% of plan used
+                        </div>
                     </div>
                 {% else %}
                     <div class="muted">Unlimited audits enabled.</div>
@@ -152,7 +182,7 @@
         <div class="layout">
             <div class="stack">
                 {% if latest_audit %}
-                    <section class="card animate-fade">
+                    <section class="card">
                         <div class="summary">
                             <h2>{{ latest_audit.website.name|default:latest_audit.website.url }}</h2>
                             <span class="status {{ latest_audit.status }}">{{ latest_audit.status }}</span>
@@ -179,7 +209,7 @@
                         </div>
                     </section>
 
-                    <section class="card animate-fade">
+                    <section class="card">
                         <h3>Findings</h3>
                         {% if findings %}
                             <div class="tags">
@@ -210,7 +240,7 @@
                         {% endif %}
                     </section>
 
-                    <section class="card animate-fade">
+                    <section class="card">
                         <h3>Metrics</h3>
                         {% if metrics %}
                             <div class="grid">
@@ -227,9 +257,10 @@
                     </section>
                 {% endif %}
 
-                <section class="card animate-fade">
+                <section class="card">
                     <h3>Your recent audits</h3>
                     {% if user_recent_audits %}
+                        <div class="table-wrapper">
                         <table>
                             <thead>
                                 <tr>
@@ -237,6 +268,7 @@
                                     <th>Status</th>
                                     <th>Summary</th>
                                     <th>Created</th>
+                                    <th>Report</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -246,17 +278,19 @@
                                         <td>{{ audit.status }}</td>
                                         <td>{{ audit.summary }}</td>
                                         <td>{{ audit.created_at|date:"M j, Y H:i" }}</td>
+                                        <td><a href="{% url 'audit-download' audit.pk %}" class="link-button">Download</a></td>
                                     </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
+                        </div>
                     {% else %}
                         <p class="empty">Run your first audit to populate this feed.</p>
                     {% endif %}
                 </section>
             </div>
 
-            <section class="card animate-fade">
+            <section class="card">
                 <h3>Plan accelerator</h3>
                 <div class="plan-grid">
                     {% for plan in plans %}
@@ -283,9 +317,10 @@
             </section>
         </div>
 
-        <section class="card animate-fade">
+        <section class="card">
             <h3>Global recent audits</h3>
             {% if recent_audits %}
+                <div class="table-wrapper">
                 <table>
                     <thead>
                         <tr>
@@ -293,6 +328,7 @@
                             <th>Status</th>
                             <th>Summary</th>
                             <th>Created</th>
+                            <th>Report</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -302,14 +338,19 @@
                                 <td>{{ audit.status }}</td>
                                 <td>{{ audit.summary }}</td>
                                 <td>{{ audit.created_at|date:"M j, Y H:i" }}</td>
+                                <td><a href="{% url 'audit-download' audit.pk %}" class="link-button">Download</a></td>
                             </tr>
                         {% endfor %}
                     </tbody>
                 </table>
+                </div>
             {% else %}
                 <p class="empty">No audits have been run yet.</p>
             {% endif %}
         </section>
-    </div>
+    </main>
+    <footer>
+        &copy; {% now "Y" %} QA Insights. All rights reserved.
+    </footer>
 </body>
 </html>
