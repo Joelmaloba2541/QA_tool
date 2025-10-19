@@ -118,7 +118,7 @@
             </div>
             <div class="actions">
                 <a href="{% url 'pricing' %}" class="button">Upgrade subscription</a>
-                {% if latest_audit %}
+                {% if latest_audit and (user.is_staff or latest_audit.created_by_id == user.id) %}
                     <a href="{% url 'audit-download' latest_audit.pk %}" class="button secondary">Download latest PDF</a>
                 {% endif %}
             </div>
@@ -338,7 +338,13 @@
                                 <td>{{ audit.status }}</td>
                                 <td>{{ audit.summary }}</td>
                                 <td>{{ audit.created_at|date:"M j, Y H:i" }}</td>
-                                <td><a href="{% url 'audit-download' audit.pk %}" class="link-button">Download</a></td>
+                                <td>
+                                    {% if user.is_staff or audit.created_by_id == user.id %}
+                                        <a href="{% url 'audit-download' audit.pk %}" class="link-button">Download</a>
+                                    {% else %}
+                                        <span class="muted">Restricted</span>
+                                    {% endif %}
+                                </td>
                             </tr>
                         {% endfor %}
                     </tbody>
