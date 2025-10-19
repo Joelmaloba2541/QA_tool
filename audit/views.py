@@ -7,14 +7,11 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.views import LoginView
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse_lazy, path, include
+from django.urls import reverse_lazy
 
 from audit.models import AuditRun, Payment, SubscriptionPlan, UserSubscription, Website
 from audit.services import generate_audit_pdf, run_audit
 
-urlpatterns = [
-    path('robots.txt', robots_txt),
-]
 
 class AuditLoginView(LoginView):
     template_name = "registration/login.html"
