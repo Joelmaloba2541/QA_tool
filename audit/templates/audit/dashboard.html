@@ -6,194 +6,301 @@
     <title>QA Tool Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        body { font-family: Arial, sans-serif; margin: 2rem; background: #f5f6fa; }
-        h1 { margin-bottom: 1rem; }
-        form { background: #fff; padding: 1.5rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 2rem; }
-        label { display: block; font-weight: bold; margin-bottom: 0.25rem; }
-        input, select, button, textarea { width: 100%; padding: 0.6rem; margin-bottom: 0.75rem; border: 1px solid #ccd1d9; border-radius: 4px; }
-        button { background: #2d8cff; border: none; color: #fff; font-weight: bold; cursor: pointer; }
-        button:hover { background: #1c6fd5; }
-        .messages { margin-bottom: 1rem; }
-        .message { padding: 0.75rem; border-radius: 4px; margin-bottom: 0.5rem; }
-        .message.success { background: #e6f9ed; color: #277448; }
-        .message.warning { background: #fff4e5; color: #8a6100; }
-        .message.error { background: #fdecea; color: #a81913; }
-        .card { background: #fff; padding: 1.5rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 1.5rem; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 0.75rem; border-bottom: 1px solid #e1e4e8; text-align: left; }
-        th { background: #f0f3f6; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; }
-        .tags { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-        .tag { padding: 0.25rem 0.5rem; border-radius: 999px; font-size: 0.8rem; color: #fff; }
-        .tag.low { background: #6c8cff; }
-        .tag.medium { background: #ffb347; }
-        .tag.high { background: #ff5c5c; }
-        .grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-        .metric { background: #f0f3f6; border-radius: 6px; padding: 1rem; }
-        .metric strong { display: block; margin-bottom: 0.5rem; }
-        .muted { color: #5f6b7a; font-size: 0.9rem; }
-        .summary { display: flex; align-items: baseline; gap: 0.75rem; margin-bottom: 1rem; }
-        .summary .status { font-weight: bold; text-transform: uppercase; }
-        .status.completed { color: #277448; }
-        .status.failed { color: #a81913; }
+        :root { color-scheme: light; }
+        body { font-family: "Inter", "Segoe UI", Arial, sans-serif; margin: 0; background: linear-gradient(135deg, #f5f8ff 0%, #fff 60%); color: #0f172a; }
+        .shell { max-width: 1100px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; }
+        header { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem; }
+        header h1 { font-size: 2.5rem; margin: 0; letter-spacing: -0.03em; }
+        header p { margin: 0; color: #475569; font-size: 1rem; }
+        .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+        .button { display: inline-flex; align-items: center; justify-content: center; padding: 0.7rem 1.4rem; border-radius: 999px; background: #2d8cff; color: #fff; font-weight: 600; text-decoration: none; border: none; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .button:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(45, 140, 255, 0.22); }
+        .button.secondary { background: #0f172a; }
+        .messages { margin-bottom: 1.5rem; }
+        .message { padding: 0.9rem 1.2rem; border-radius: 12px; margin-bottom: 0.75rem; font-weight: 500; animation: fadeUp 0.4s ease both; }
+        .message.success { background: rgba(34, 197, 94, 0.12); color: #15803d; }
+        .message.warning { background: rgba(251, 191, 36, 0.16); color: #92400e; }
+        .message.error { background: rgba(248, 113, 113, 0.16); color: #b91c1c; }
+        form { background: #fff; padding: 1.75rem; border-radius: 18px; box-shadow: 0 20px 45px rgba(15, 23, 42, 0.08); margin-bottom: 2.5rem; display: grid; gap: 1rem; position: relative; overflow: hidden; }
+        form::before { content: ""; position: absolute; inset: -40% 20% 70% -20%; background: radial-gradient(circle, rgba(45,140,255,0.14) 0%, transparent 60%); }
+        form h2 { margin: 0; font-size: 1.35rem; position: relative; z-index: 1; }
+        label { display: block; font-weight: 600; margin-bottom: 0.35rem; color: #1e293b; position: relative; z-index: 1; }
+        select, input, textarea { width: 100%; padding: 0.8rem 0.9rem; border-radius: 10px; border: 1px solid #d6e0f0; background: rgba(248, 250, 252, 0.8); transition: border 0.2s ease, box-shadow 0.2s ease; position: relative; z-index: 1; }
+        select:focus, input:focus, textarea:focus { border-color: #2d8cff; outline: none; box-shadow: 0 0 0 3px rgba(45, 140, 255, 0.2); }
+        button[type="submit"] { justify-self: flex-start; position: relative; z-index: 1; }
+        .muted { color: #64748b; font-size: 0.95rem; position: relative; z-index: 1; }
+        .layout { display: grid; gap: 1.5rem; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); align-items: start; }
+        .stack { display: grid; gap: 1.5rem; }
+        .card { background: #fff; border-radius: 18px; padding: 1.75rem; box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06); position: relative; overflow: hidden; animation: fadeUp 0.6s ease both; }
+        .card::after { content: ""; position: absolute; inset: 65% -35% -35% 60%; background: radial-gradient(circle, rgba(45,140,255,0.08) 0%, transparent 65%); }
+        .card h2, .card h3 { margin-top: 0; margin-bottom: 1rem; font-size: 1.25rem; position: relative; z-index: 1; }
+        .summary { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-bottom: 1.25rem; position: relative; z-index: 1; }
+        .summary h2 { margin: 0; font-size: 1.5rem; }
+        .summary .status { padding: 0.35rem 0.9rem; border-radius: 999px; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; background: rgba(45, 140, 255, 0.1); color: #1d4ed8; }
+        .status.completed { background: rgba(34, 197, 94, 0.14); color: #047857; }
+        .status.failed { background: rgba(248, 113, 113, 0.18); color: #b91c1c; }
+        .summary .muted { margin-left: auto; }
+        .grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); position: relative; z-index: 1; }
+        .metric { background: linear-gradient(145deg, #f8fbff 0%, #edf4ff 100%); border-radius: 14px; padding: 1.1rem; transition: transform 0.2s ease; animation: pulse 5s ease infinite; }
+        .metric strong { display: block; font-size: 0.85rem; letter-spacing: 0.08em; text-transform: uppercase; color: #475569; margin-bottom: 0.4rem; }
+        .metric div { font-size: 1.5rem; font-weight: 700; color: #0f172a; }
+        .metric:hover { transform: translateY(-4px); }
+        table { width: 100%; border-collapse: collapse; position: relative; z-index: 1; }
+        th, td { padding: 0.85rem 0.75rem; text-align: left; border-bottom: 1px solid rgba(226, 232, 240, 0.8); }
+        th { font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; color: #475569; background: rgba(15, 23, 42, 0.02); }
+        tbody tr:hover { background: rgba(241, 245, 249, 0.6); }
+        .tags { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; position: relative; z-index: 1; }
+        .tag { padding: 0.35rem 0.75rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; color: #fff; box-shadow: 0 10px 18px rgba(15, 23, 42, 0.12); }
+        .tag.low { background: #6366f1; }
+        .tag.medium { background: #f97316; }
+        .tag.high { background: #ef4444; }
+        .subscription-card { display: grid; gap: 1rem; background: linear-gradient(130deg, rgba(45,140,255,0.12), rgba(56,189,248,0.18)); border-radius: 18px; padding: 1.4rem; color: #0f172a; animation: fadeUp 0.6s ease both; }
+        .subscription-card .title { font-size: 1.05rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; }
+        .subscription-meta { display: flex; flex-wrap: wrap; gap: 1rem; font-size: 0.9rem; color: #0f172a; }
+        .quota { display: grid; gap: 0.5rem; }
+        .progress-bar { height: 8px; border-radius: 999px; background: rgba(15, 23, 42, 0.15); overflow: hidden; }
+        .progress-bar span { display: block; height: 100%; background: linear-gradient(90deg, #2d8cff, #8b5cf6); transition: width 0.6s ease; }
+        .plan-grid { display: grid; gap: 1.2rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); position: relative; z-index: 1; }
+        .plan { background: #fff; border-radius: 16px; padding: 1.4rem; box-shadow: 0 16px 32px rgba(15, 23, 42, 0.07); display: grid; gap: 0.75rem; }
+        .plan h4 { margin: 0; font-size: 1.1rem; }
+        .plan .price { font-size: 1.8rem; font-weight: 700; }
+        .plan ul { margin: 0; padding-left: 1rem; color: #475569; display: grid; gap: 0.4rem; }
+        .plan form { margin: 0; padding: 0; box-shadow: none; background: none; display: contents; }
+        .plan button { width: 100%; }
+        .empty { color: #94a3b8; font-style: italic; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0%, 100% { box-shadow: 0 18px 40px rgba(45, 140, 255, 0.08); } 50% { box-shadow: 0 22px 55px rgba(45, 140, 255, 0.18); } }
+        @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } header h1 { font-size: 2rem; } }
     </style>
 </head>
 <body>
-    <h1>QA Audit Dashboard</h1>
+    <div class="shell">
+        <header class="animate-fade">
+            <div>
+                <h1>QA Insights Control Center</h1>
+                <p>Deliver 99% accurate accessibility, SEO, and performance audits with instant PDF reports.</p>
+            </div>
+            <div class="actions">
+                <a href="{% url 'pricing' %}" class="button">Upgrade subscription</a>
+                {% if latest_audit %}
+                    <a href="{% url 'audit-download' latest_audit.pk %}" class="button secondary">Download latest PDF</a>
+                {% endif %}
+            </div>
+        </header>
 
-    <div class="messages">
-        {% for message in messages %}
-            <div class="message {{ message.tags }}">{{ message }}</div>
-        {% endfor %}
-    </div>
-
-    <form method="post">
-        {% csrf_token %}
-        <h2>Run a New Audit</h2>
-        <label for="website_id">Choose saved website</label>
-        <select name="website_id" id="website_id">
-            <option value="">-- Select existing website --</option>
-            {% for site in websites %}
-                <option value="{{ site.id }}">{{ site.name|default:site.url }}</option>
-            {% empty %}
-                <option value="" disabled>No saved websites yet.</option>
+        <div class="messages">
+            {% for message in messages %}
+                <div class="message {{ message.tags }}">{{ message }}</div>
             {% endfor %}
-        </select>
-        <p class="muted">Or provide a new website URL below to add it automatically:</p>
-        <label for="name">Website name</label>
-        <input type="text" id="name" name="name" placeholder="My Website" />
-        <label for="url">Website URL</label>
-        <input type="url" id="url" name="url" placeholder="https://example.com" />
-        <button type="submit">Run Audit</button>
-    </form>
-
-    {% if latest_audit %}
-        <div class="card">
-            <div class="summary">
-                <h2>{{ latest_audit.website.name|default:latest_audit.website.url }}</h2>
-                <span class="status {{ latest_audit.status }}">{{ latest_audit.status }}</span>
-                <span class="muted">{{ latest_audit.created_at|date:"M j, Y H:i" }}</span>
-            </div>
-            <p class="muted">{{ latest_audit.summary }}</p>
-            <div class="grid">
-                <div class="metric">
-                    <strong>Score</strong>
-                    <div>{{ latest_audit.score }}</div>
-                </div>
-                <div class="metric">
-                    <strong>Response Time</strong>
-                    <div>{{ latest_audit.response_time_ms }} ms</div>
-                </div>
-                <div class="metric">
-                    <strong>Content Length</strong>
-                    <div>{{ latest_audit.content_length }} bytes</div>
-                </div>
-                <div class="metric">
-                    <strong>HTTP Status</strong>
-                    <div>{{ latest_audit.metadata.status }}</div>
-                </div>
-            </div>
         </div>
 
-        <div class="card">
-            <h3>Findings</h3>
-            {% if findings %}
-                <div class="tags">
-                    {% for finding in findings %}
-                        <div class="tag {{ finding.severity }}">{{ finding.category }} – {{ finding.severity|title }}</div>
+        {% if subscription %}
+            <section class="subscription-card">
+                <div class="title">Current plan · {{ subscription.plan.name }}</div>
+                <div class="subscription-meta">
+                    <span>Status: {{ subscription.status|title }}</span>
+                    {% if subscription.current_period_end %}
+                        <span>Renews: {{ subscription.current_period_end|date:"M j, Y" }}</span>
+                    {% else %}
+                        <span>Renews: Lifetime access</span>
+                    {% endif %}
+                    <span>Accuracy: 99%</span>
+                </div>
+                {% if subscription.plan.audit_quota %}
+                    <div class="quota">
+                        <div>Audits used {{ subscription.audits_used }} / {{ subscription.plan.audit_quota }}</div>
+                        <div class="progress-bar">
+                            <span style="width: {% widthratio subscription.audits_used subscription.plan.audit_quota 100 %}%"></span>
+                        </div>
+                        <div class="muted">Remaining: {{ remaining_audits }} audit{{ remaining_audits|pluralize }}</div>
+                    </div>
+                {% else %}
+                    <div class="muted">Unlimited audits enabled.</div>
+                {% endif %}
+            </section>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <h2>Launch a precision-guided audit</h2>
+            <label for="website_id">Choose saved website</label>
+            <select name="website_id" id="website_id">
+                <option value="">Select existing website</option>
+                {% for site in websites %}
+                    <option value="{{ site.id }}">{{ site.name|default:site.url }}</option>
+                {% empty %}
+                    <option value="" disabled>No saved websites yet.</option>
+                {% endfor %}
+            </select>
+            <p class="muted">Or provide a new website URL and we will add it to your workspace automatically.</p>
+            <label for="name">Website name</label>
+            <input type="text" id="name" name="name" placeholder="My Website" />
+            <label for="url">Website URL</label>
+            <input type="url" id="url" name="url" placeholder="https://example.com" required />
+            <button type="submit" class="button">Run audit</button>
+        </form>
+
+        <div class="layout">
+            <div class="stack">
+                {% if latest_audit %}
+                    <section class="card animate-fade">
+                        <div class="summary">
+                            <h2>{{ latest_audit.website.name|default:latest_audit.website.url }}</h2>
+                            <span class="status {{ latest_audit.status }}">{{ latest_audit.status }}</span>
+                            <span class="muted">{{ latest_audit.created_at|date:"M j, Y H:i" }}</span>
+                        </div>
+                        <p class="muted">{{ latest_audit.summary }}</p>
+                        <div class="grid">
+                            <div class="metric">
+                                <strong>Score</strong>
+                                <div>{{ latest_audit.score }}</div>
+                            </div>
+                            <div class="metric">
+                                <strong>Response Time</strong>
+                                <div>{{ latest_audit.response_time_ms }} ms</div>
+                            </div>
+                            <div class="metric">
+                                <strong>Content Length</strong>
+                                <div>{{ latest_audit.content_length }} bytes</div>
+                            </div>
+                            <div class="metric">
+                                <strong>HTTP Status</strong>
+                                <div>{{ latest_audit.metadata.status }}</div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="card animate-fade">
+                        <h3>Findings</h3>
+                        {% if findings %}
+                            <div class="tags">
+                                {% for finding in findings %}
+                                    <div class="tag {{ finding.severity }}">{{ finding.category }} – {{ finding.severity|title }}</div>
+                                {% endfor %}
+                            </div>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Title</th>
+                                        <th>Description</th>
+                                        <th>Recommendation</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for finding in findings %}
+                                        <tr>
+                                            <td>{{ finding.title }}</td>
+                                            <td>{{ finding.description }}</td>
+                                            <td>{{ finding.recommendation }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        {% else %}
+                            <p class="empty">No findings recorded for this audit.</p>
+                        {% endif %}
+                    </section>
+
+                    <section class="card animate-fade">
+                        <h3>Metrics</h3>
+                        {% if metrics %}
+                            <div class="grid">
+                                {% for metric in metrics %}
+                                    <div class="metric">
+                                        <strong>{{ metric.label }}</strong>
+                                        <div>{{ metric.value }}</div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="empty">No metrics recorded.</p>
+                        {% endif %}
+                    </section>
+                {% endif %}
+
+                <section class="card animate-fade">
+                    <h3>Your recent audits</h3>
+                    {% if user_recent_audits %}
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Website</th>
+                                    <th>Status</th>
+                                    <th>Summary</th>
+                                    <th>Created</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for audit in user_recent_audits %}
+                                    <tr>
+                                        <td>{{ audit.website.name|default:audit.website.url }}</td>
+                                        <td>{{ audit.status }}</td>
+                                        <td>{{ audit.summary }}</td>
+                                        <td>{{ audit.created_at|date:"M j, Y H:i" }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p class="empty">Run your first audit to populate this feed.</p>
+                    {% endif %}
+                </section>
+            </div>
+
+            <section class="card animate-fade">
+                <h3>Plan accelerator</h3>
+                <div class="plan-grid">
+                    {% for plan in plans %}
+                        <article class="plan">
+                            <h4>{{ plan.name }}</h4>
+                            <div class="muted">{{ plan.description }}</div>
+                            <div class="price">{{ plan.display_price }}</div>
+                            {% if plan.features %}
+                                <ul>
+                                    {% for feature in plan.features %}
+                                        <li>{{ feature }}</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                            <form method="post" action="{% url 'checkout' plan.slug %}">
+                                {% csrf_token %}
+                                <button type="submit" class="button">Select {{ plan.name }}</button>
+                            </form>
+                        </article>
+                    {% empty %}
+                        <p class="empty">No public plans available yet.</p>
                     {% endfor %}
                 </div>
+            </section>
+        </div>
+
+        <section class="card animate-fade">
+            <h3>Global recent audits</h3>
+            {% if recent_audits %}
                 <table>
                     <thead>
                         <tr>
-                            <th>Title</th>
-                            <th>Description</th>
-                            <th>Recommendation</th>
+                            <th>Website</th>
+                            <th>Status</th>
+                            <th>Summary</th>
+                            <th>Created</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for finding in findings %}
+                        {% for audit in recent_audits %}
                             <tr>
-                                <td>{{ finding.title }}</td>
-                                <td>{{ finding.description }}</td>
-                                <td>{{ finding.recommendation }}</td>
+                                <td>{{ audit.website.name|default:audit.website.url }}</td>
+                                <td>{{ audit.status }}</td>
+                                <td>{{ audit.summary }}</td>
+                                <td>{{ audit.created_at|date:"M j, Y H:i" }}</td>
                             </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             {% else %}
-                <p class="muted">No findings recorded for this audit.</p>
+                <p class="empty">No audits have been run yet.</p>
             {% endif %}
-        </div>
-
-        <div class="card">
-            <h3>Metrics</h3>
-            {% if metrics %}
-                <div class="grid">
-                    {% for metric in metrics %}
-                        <div class="metric">
-                            <strong>{{ metric.label }}</strong>
-                            <div>{{ metric.value }}</div>
-                        </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <p class="muted">No metrics recorded.</p>
-            {% endif %}
-        </div>
-    {% endif %}
-
-    {% if user_recent_audits %}
-        <div class="card">
-            <h3>Your Recent Audits</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Website</th>
-                        <th>Status</th>
-                        <th>Summary</th>
-                        <th>Created</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for audit in user_recent_audits %}
-                        <tr>
-                            <td>{{ audit.website.name|default:audit.website.url }}</td>
-                            <td>{{ audit.status }}</td>
-                            <td>{{ audit.summary }}</td>
-                            <td>{{ audit.created_at|date:"M j, Y H:i" }}</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    {% endif %}
-
-    <div class="card">
-        <h3>Recent Audits</h3>
-        {% if recent_audits %}
-            <table>
-                <thead>
-                    <tr>
-                        <th>Website</th>
-                        <th>Status</th>
-                        <th>Summary</th>
-                        <th>Created</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for audit in recent_audits %}
-                        <tr>
-                            <td>{{ audit.website.name|default:audit.website.url }}</td>
-                            <td>{{ audit.status }}</td>
-                            <td>{{ audit.summary }}</td>
-                            <td>{{ audit.created_at|date:"M j, Y H:i" }}</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        {% else %}
-            <p class="muted">No audits have been run yet.</p>
-        {% endif %}
+        </section>
     </div>
 </body>
 </html>

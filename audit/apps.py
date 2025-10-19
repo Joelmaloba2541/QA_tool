@@ -1,6 +1,15 @@
 from django.apps import AppConfig
 
 
+def _bootstrap_subscription_plans(sender, **kwargs):
+    try:
+        from .models import SubscriptionPlan
+
+        SubscriptionPlan.bootstrap_defaults()
+    except Exception:
+        pass
+
+
 def _ensure_default_admin():
     try:
         from django.contrib.auth import get_user_model
@@ -20,9 +29,16 @@ def _ensure_default_admin():
         pass
 
 
+def _ensure_default_admin_post_migrate(sender, **kwargs):
+    _ensure_default_admin()
+
+
 class AuditConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'audit'
 
     def ready(self):
-        _ensure_default_admin()
+        from django.db.models.signals import post_migrate
+
+        post_migrate.connect(_bootstrap_subscription_plans, sender=self, weak=False)
+        post_migrate.connect(_ensure_default_admin_post_migrate, sender=self, weak=False)

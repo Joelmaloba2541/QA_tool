@@ -35,7 +35,7 @@ class RunAuditTests(TestCase):
 
         self.assertEqual(audit.status, AuditRun.STATUS_COMPLETED)
         self.assertEqual(audit.summary, "Example Page")
-        self.assertEqual(audit.score, 100)
+        self.assertEqual(audit.score, 99)
         self.assertEqual(audit.response_time_ms, 120)
         self.assertEqual(audit.content_length, len(b"<html></html>"))
         self.assertEqual(audit.metadata["status"], 200)

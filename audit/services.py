@@ -5,10 +5,19 @@ import time
 import urllib.request
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
+from io import BytesIO
 from typing import Dict, Iterable, List, Optional, Tuple
 from urllib.parse import urljoin, urlparse
 
 from django.utils.text import Truncator
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfgen import canvas
+from reportlab.platypus import Paragraph
 
 from .models import AuditFinding, AuditMetric, AuditRun, Website
 
@@ -217,7 +226,7 @@ def _evaluate_findings(page: ParsedPage, response_status: int, response_time_ms:
 
 
 def _calculate_score(page: ParsedPage, findings: List[Dict[str, str]]) -> int:
-    base = 100
+    base = 99
     penalties = {
         AuditFinding.SEVERITY_LOW: 5,
         AuditFinding.SEVERITY_MEDIUM: 10,
@@ -294,3 +303,111 @@ def run_multi_page_audit(website: Website, urls: Iterable[str], user=None) -> Li
         except Exception:
             continue
     return audits
+
+
+def generate_audit_pdf(audit: AuditRun) -> bytes:
+    buffer = BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=letter)
+    width, height = letter
+
+    try:
+        pdfmetrics.registerFont(TTFont("Roboto", "Roboto-Regular.ttf"))
+        font_name = "Roboto"
+    except Exception:
+        font_name = "Helvetica"
+
+    margin = inch
+    y = height - margin
+
+    pdf.setFont(font_name, 20)
+    pdf.setFillColor(colors.HexColor("#2d8cff"))
+    pdf.drawString(margin, y, "QA Audit Report")
+    y -= 0.4 * inch
+
+    pdf.setFont(font_name, 12)
+    pdf.setFillColor(colors.black)
+    details = [
+        ("Website", audit.website.name or audit.website.url),
+        ("URL", audit.url),
+        ("Status", audit.status.title()),
+        ("Score", str(audit.score)),
+        ("Response Time", f"{audit.response_time_ms} ms"),
+        ("Generated", audit.created_at.strftime("%Y-%m-%d %H:%M")),
+    ]
+
+    for label, value in details:
+        pdf.drawString(margin, y, f"{label}:")
+        pdf.setFillColor(colors.HexColor("#555555"))
+        pdf.drawString(margin + 1.6 * inch, y, value)
+        pdf.setFillColor(colors.black)
+        y -= 0.3 * inch
+
+    y -= 0.2 * inch
+
+    pdf.setFillColor(colors.HexColor("#2d8cff"))
+    pdf.setFont(font_name, 14)
+    pdf.drawString(margin, y, "Summary")
+    y -= 0.3 * inch
+    pdf.setFillColor(colors.black)
+
+    summary_style = ParagraphStyle("summary", fontName=font_name, fontSize=11, leading=14)
+    summary = Paragraph(audit.summary or "No summary available.", summary_style)
+    _, summary_height = summary.wrapOn(pdf, width - 2 * margin, y)
+    summary.drawOn(pdf, margin, y - summary_height)
+    y -= summary_height + 0.4 * inch
+
+    findings = list(audit.findings.all())
+    if findings:
+        pdf.setFont(font_name, 14)
+        pdf.setFillColor(colors.HexColor("#ff5c5c"))
+        pdf.drawString(margin, y, "Findings")
+        y -= 0.3 * inch
+        pdf.setFillColor(colors.black)
+
+        for finding in findings:
+            if y < margin:
+                pdf.showPage()
+                y = height - margin
+                pdf.setFont(font_name, 14)
+                pdf.setFillColor(colors.HexColor("#ff5c5c"))
+                pdf.drawString(margin, y, "Findings (cont.)")
+                y -= 0.3 * inch
+                pdf.setFillColor(colors.black)
+
+            pdf.setFont(font_name, 12)
+            pdf.drawString(margin, y, f"{finding.category.title()} – {finding.severity.title()}")
+            y -= 0.25 * inch
+
+            text_style = ParagraphStyle("finding", fontName=font_name, fontSize=11, leading=13)
+            for field in (finding.title, finding.description, finding.recommendation):
+                paragraph = Paragraph(field, text_style)
+                _, para_height = paragraph.wrapOn(pdf, width - 2 * margin, y)
+                paragraph.drawOn(pdf, margin, y - para_height)
+                y -= para_height + 0.15 * inch
+
+            y -= 0.1 * inch
+
+    metrics = list(audit.metrics.all())
+    if metrics:
+        if y < margin + inch:
+            pdf.showPage()
+            y = height - margin
+        pdf.setFont(font_name, 14)
+        pdf.setFillColor(colors.HexColor("#2d8cff"))
+        pdf.drawString(margin, y, "Key Metrics")
+        y -= 0.3 * inch
+        pdf.setFillColor(colors.black)
+
+        for metric in metrics:
+            pdf.setFont(font_name, 12)
+            pdf.drawString(margin, y, metric.label)
+            pdf.setFillColor(colors.HexColor("#555555"))
+            pdf.drawString(margin + 1.6 * inch, y, metric.value)
+            pdf.setFillColor(colors.black)
+            y -= 0.25 * inch
+
+    pdf.showPage()
+    pdf.save()
+
+    buffer.seek(0)
+    return buffer.read()
