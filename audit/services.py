@@ -3,6 +3,8 @@ import re
 import ssl
 import time
 import urllib.request
+from html import escape
+from urllib.error import HTTPError
 from dataclasses import dataclass, field
 from html.parser import HTMLParser
 from io import BytesIO
@@ -87,11 +89,25 @@ def _safe_request(url: str, timeout: int = 15) -> Tuple[int, bytes, float]:
     request = urllib.request.Request(url, headers={"User-Agent": "QA-Tool/1.0"})
     ssl_context = ssl.create_default_context()
     start = time.monotonic()
-    with urllib.request.urlopen(request, timeout=timeout, context=ssl_context) as response:
-        body = response.read()
-        status = getattr(response, "status", response.getcode())
+    try:
+        with urllib.request.urlopen(request, timeout=timeout, context=ssl_context) as response:
+            body = response.read()
+            status = getattr(response, "status", response.getcode())
+    except HTTPError as exc:
+        body = exc.read() if hasattr(exc, "read") else b""
+        status = getattr(exc, "code", 0)
     elapsed_ms = int((time.monotonic() - start) * 1000)
     return status, body, elapsed_ms
+
+
+def _pdf_text(value, default: str = "") -> str:
+    if value is None or value == "":
+        text = default
+    else:
+        text = value
+    if not isinstance(text, str):
+        text = str(text)
+    return escape(text, quote=False)
 
 
 def _parse_html(content: bytes, url: str) -> ParsedPage:
@@ -377,18 +393,18 @@ def generate_audit_pdf(audit: AuditRun) -> bytes:
     story.append(Paragraph("QA Insights Audit Report", title_style))
     story.append(
         Paragraph(
-            audit.website.name or audit.website.url,
+            _pdf_text(audit.website.name or audit.website.url),
             subtitle_style,
         )
     )
 
     detail_data = [
-        ["Website", audit.website.name or audit.website.url],
-        ["URL", audit.url],
-        ["Status", audit.status.title()],
-        ["Score", str(audit.score)],
-        ["Response Time", f"{audit.response_time_ms} ms"],
-        ["Generated", audit.created_at.strftime("%Y-%m-%d %H:%M")],
+        ["Website", _pdf_text(audit.website.name or audit.website.url)],
+        ["URL", _pdf_text(audit.url)],
+        ["Status", _pdf_text(audit.status.title())],
+        ["Score", _pdf_text(audit.score)],
+        ["Response Time", _pdf_text(f"{audit.response_time_ms} ms")],
+        ["Generated", _pdf_text(audit.created_at.strftime("%Y-%m-%d %H:%M"))],
     ]
 
     detail_table = Table(detail_data, colWidths=[1.7 * inch, doc.width - 1.7 * inch])
@@ -410,7 +426,7 @@ def generate_audit_pdf(audit: AuditRun) -> bytes:
     story.append(Spacer(1, 18))
 
     story.append(Paragraph("Summary", section_style))
-    story.append(Paragraph(audit.summary or "No summary available.", summary_style))
+    story.append(Paragraph(_pdf_text(audit.summary, "No summary available."), summary_style))
 
     findings = list(audit.findings.all())
     if findings:
@@ -425,22 +441,22 @@ def generate_audit_pdf(audit: AuditRun) -> bytes:
             finding_data = [
                 [
                     Paragraph(
-                        f"<b>{finding.category.title()}</b> – {finding.severity.title()}",
+                        f"<b>{escape(finding.category.title(), quote=False)}</b> – {escape(finding.severity.title(), quote=False)}",
                         ParagraphStyle("Badge", parent=summary_style, textColor=colors.white),
                     ),
                     "",
                 ],
                 [
                     Paragraph("<b>Issue</b>", summary_style),
-                    Paragraph(finding.title, summary_style),
+                    Paragraph(_pdf_text(finding.title), summary_style),
                 ],
                 [
                     Paragraph("<b>Description</b>", summary_style),
-                    Paragraph(finding.description, summary_style),
+                    Paragraph(_pdf_text(finding.description), summary_style),
                 ],
                 [
                     Paragraph("<b>Recommendation</b>", summary_style),
-                    Paragraph(finding.recommendation, summary_style),
+                    Paragraph(_pdf_text(finding.recommendation), summary_style),
                 ],
             ]
             finding_table = Table(
@@ -469,7 +485,9 @@ def generate_audit_pdf(audit: AuditRun) -> bytes:
     if metrics:
         story.append(Paragraph("Key Metrics", section_style))
         metrics_data = [["Metric", "Value"]]
-        metrics_data.extend([[metric.label, metric.value] for metric in metrics])
+        metrics_data.extend(
+            [[_pdf_text(metric.label), _pdf_text(metric.value)] for metric in metrics]
+        )
         metrics_table = Table(metrics_data, colWidths=[2.2 * inch, doc.width - 2.2 * inch])
         metrics_table.setStyle(
             TableStyle(
